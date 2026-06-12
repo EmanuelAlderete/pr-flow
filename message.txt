@@ -1,0 +1,3 @@
+JOR-xxx - Título do PR: link.da.ticket/jira/JOR-xxx
+
+- link_da_pr

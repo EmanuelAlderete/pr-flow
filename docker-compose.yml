@@ -1,0 +1,96 @@
+services:
+  loki:
+    image: grafana/loki:3.4.2
+    command: -config.file=/etc/loki/config.yml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./observability/loki-config.yml:/etc/loki/config.yml
+      - loki_data:/loki
+
+  promtail:
+    image: grafana/promtail:3.4.2
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./observability/promtail-config.yml:/etc/promtail/config.yml
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - loki
+
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    depends_on:
+      app:
+        condition: service_started
+
+  grafana:
+    image: grafana/grafana:11.5.2
+    ports:
+      - "3848:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: prflow
+      GF_USERS_DEFAULT_THEME: dark
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - loki
+      - prometheus
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: prflow
+      POSTGRES_PASSWORD: prflow
+      POSTGRES_DB: prflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U prflow -d prflow"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+    ports:
+      - "5432:5432"
+
+  app:
+    build: .
+    labels:
+      prflow.logs: "true"
+      prflow.service: "app"
+    ports:
+      - "${PORT:-3847}:3847"
+    environment:
+      PORT: 3847
+      HOSTNAME: 0.0.0.0
+      LOG_FORMAT: json
+      DATABASE_URL: postgresql://prflow:prflow@postgres:5432/prflow
+      GH_TOKEN: ${GH_TOKEN}
+      MONITORED_REPOSITORIES: ${MONITORED_REPOSITORIES}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-}
+      JIRA_EMAIL: ${JIRA_EMAIL:-}
+      JIRA_TOKEN: ${JIRA_TOKEN:-}
+      JIRA_SITE_URL: ${JIRA_SITE_URL:-}
+      JIRA_SPRINT_PROJECT_KEY: ${JIRA_SPRINT_PROJECT_KEY:-}
+      JIRA_SPRINT_BOARD_ID: ${JIRA_SPRINT_BOARD_ID:-}
+      DISABLE_JIRA_SYNC_CRON: ${DISABLE_JIRA_SYNC_CRON:-}
+      SLACK_BOT_OAUTH_TOKEN: ${SLACK_BOT_OAUTH_TOKEN:-}
+      SLACK_PR_CHANNEL: ${SLACK_PR_CHANNEL:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  loki_data:
+  prometheus_data:
+  grafana_data:

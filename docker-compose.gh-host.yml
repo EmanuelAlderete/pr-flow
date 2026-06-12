@@ -1,0 +1,15 @@
+# Reuse host `gh auth login` inside the app container (same as local npm run dev).
+#
+# Usage (leave GH_TOKEN unset or empty in .env):
+#   UID=$(id -u) GID=$(id -g) docker compose -f docker-compose.yml -f docker-compose.gh-host.yml up --build
+#
+# GH_TOKEN in the environment overrides mounted credentials — do not set a PAT
+# in .env when using this file unless it has access to your org repos.
+
+services:
+  app:
+    user: "${UID}:${GID}"
+    environment:
+      GH_TOKEN: ""
+    volumes:
+      - "${GH_CONFIG_DIR:-${HOME}/.config/gh}:/home/nextjs/.config/gh:ro"
