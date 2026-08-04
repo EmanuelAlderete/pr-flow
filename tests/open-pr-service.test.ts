@@ -3,6 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const discoverOpenPrBranches = vi.fn();
 const createPullRequest = vi.fn();
 const runPrSyncCron = vi.fn();
+const upsertOpenPrBranchBase = vi.fn();
+const getOpenPrBranchBaseMap = vi.fn();
+const listDistinctOpenPrBaseBranchesForRepository = vi.fn();
+const listAuthorBranches = vi.fn();
 
 vi.mock("@/modules/prs/lib/open-pr/open-pr-branch-discovery", () => ({
   discoverOpenPrBranches: (...args: unknown[]) => discoverOpenPrBranches(...args)
@@ -10,7 +14,15 @@ vi.mock("@/modules/prs/lib/open-pr/open-pr-branch-discovery", () => ({
 
 vi.mock("@/modules/prs/lib/open-pr/gh-open-pr-client", () => ({
   getGhAuthenticatedLogin: vi.fn().mockResolvedValue("dev"),
-  createPullRequest: (...args: unknown[]) => createPullRequest(...args)
+  createPullRequest: (...args: unknown[]) => createPullRequest(...args),
+  listAuthorBranches: (...args: unknown[]) => listAuthorBranches(...args)
+}));
+
+vi.mock("@/modules/prs/lib/open-pr/open-pr-branch-base-repository", () => ({
+  upsertOpenPrBranchBase: (...args: unknown[]) => upsertOpenPrBranchBase(...args),
+  getOpenPrBranchBaseMap: (...args: unknown[]) => getOpenPrBranchBaseMap(...args),
+  listDistinctOpenPrBaseBranchesForRepository: (...args: unknown[]) =>
+    listDistinctOpenPrBaseBranchesForRepository(...args)
 }));
 
 const listMonitoredRepositoriesForApp = vi.fn();
@@ -47,6 +59,8 @@ import {
 describe("open-pr-service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getOpenPrBranchBaseMap.mockResolvedValue(new Map());
+    upsertOpenPrBranchBase.mockResolvedValue(undefined);
     discoverOpenPrBranches.mockResolvedValue({
       status: "ok",
       branches: [],
@@ -135,6 +149,11 @@ describe("open-pr-service", () => {
       }),
       undefined
     );
+    expect(upsertOpenPrBranchBase).toHaveBeenCalledWith({
+      repository: "acme/repo",
+      branchName: "git_convention/jor-1/x",
+      baseBranch: "master"
+    });
     expect(runPrSyncCron).toHaveBeenCalledWith({ manual: true });
   });
 

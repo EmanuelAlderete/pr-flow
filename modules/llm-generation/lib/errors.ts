@@ -1,7 +1,7 @@
 import { ApiError } from "@google/genai";
-import { GEMINI_RATE_LIMIT_USER_MESSAGE } from "@/modules/messages";
+import { GEMINI_RATE_LIMIT_USER_MESSAGE, GEMINI_UNAVAILABLE_USER_MESSAGE } from "@/modules/messages";
 
-export { GEMINI_RATE_LIMIT_USER_MESSAGE };
+export { GEMINI_RATE_LIMIT_USER_MESSAGE, GEMINI_UNAVAILABLE_USER_MESSAGE };
 
 export const GEMINI_RATE_LIMIT_LINK = "https://ai.studio/spend";
 
@@ -56,4 +56,57 @@ export function toGeminiRateLimitError(error: unknown): GeminiRateLimitError {
     return error;
   }
   return new GeminiRateLimitError();
+}
+
+export function isGeminiTransientError(error: unknown): boolean {
+  if (isGeminiRateLimitError(error)) {
+    return false;
+  }
+
+  if (error instanceof ApiError && error.status === 503) {
+    return true;
+  }
+
+  if (error && typeof error === "object") {
+    const status = (error as { status?: number }).status;
+    if (status === 503) {
+      return true;
+    }
+
+    const nested = (error as { error?: { code?: number; status?: string } }).error;
+    if (nested?.code === 503 || nested?.status === "UNAVAILABLE") {
+      return true;
+    }
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  return /503|UNAVAILABLE|high demand|try again later/i.test(message);
+}
+
+export function toGeminiTransientError(error: unknown): GeminiGenerationError {
+  if (error instanceof GeminiGenerationError) {
+    return error;
+  }
+  return new GeminiGenerationError(GEMINI_UNAVAILABLE_USER_MESSAGE);
+}
+
+export function isGeminiModelNotFoundError(error: unknown): boolean {
+  if (error instanceof ApiError && error.status === 404) {
+    return true;
+  }
+
+  if (error && typeof error === "object") {
+    const status = (error as { status?: number }).status;
+    if (status === 404) {
+      return true;
+    }
+
+    const nested = (error as { error?: { code?: number; status?: string } }).error;
+    if (nested?.code === 404 || nested?.status === "NOT_FOUND") {
+      return true;
+    }
+  }
+
+  const message = error instanceof Error ? error.message : String(error);
+  return /404|NOT_FOUND|model.*not found|not supported for generatecontent/i.test(message);
 }

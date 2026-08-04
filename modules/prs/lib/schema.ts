@@ -81,3 +81,22 @@ export const prSlackShares = pgTable(
 );
 
 export type PrSlackShareRow = typeof prSlackShares.$inferSelect;
+
+/** Branch destino (base) escolhida no wizard de abrir PR, por branch de feature. */
+export const openPrBranchBases = pgTable(
+  "open_pr_branch_bases",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    repository: text("repository").notNull(),
+    branchName: text("branch_name").notNull(),
+    baseBranch: text("base_branch").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [
+    uniqueIndex("open_pr_branch_bases_repository_branch_unique").on(table.repository, table.branchName)
+  ]
+);
+
+export type OpenPrBranchBaseRow = typeof openPrBranchBases.$inferSelect;
+export type OpenPrBranchBaseInsert = typeof openPrBranchBases.$inferInsert;

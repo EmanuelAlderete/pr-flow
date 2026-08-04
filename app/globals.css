@@ -93,29 +93,26 @@ a {
 }
 
 .panel {
-  background:
-    radial-gradient(circle at 100% 0%, rgba(240, 120, 50, 0.05), transparent 34%),
-    radial-gradient(circle at 18% -30%, rgba(255, 255, 255, 0.06), transparent 38%),
-    linear-gradient(145deg, rgba(37, 42, 54, 0.58), rgba(16, 20, 28, 0.76));
-  border: 1px solid var(--app-border);
-  border-radius: 14px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    inset 3px 0 0 color-mix(in oklab, var(--brand) 55%, transparent),
-    0 10px 25px rgba(1, 3, 8, 0.34);
-  backdrop-filter: blur(6px);
+  background: rgba(18, 22, 32, 0.82);
+  border: 1px solid color-mix(in oklab, var(--app-border) 78%, transparent);
+  border-radius: 12px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
 }
 
 .panel-inset {
-  border: 1px solid var(--app-border-strong);
-  border-radius: 12px;
+  border: 1px solid color-mix(in oklab, var(--app-border-strong) 70%, transparent);
+  border-radius: 10px;
   background: var(--app-surface-inset);
 }
 
 .panel-dashed {
-  border: 1px dashed var(--app-border-strong);
-  border-radius: 12px;
-  background: rgba(15, 19, 27, 0.35);
+  border: 1px dashed color-mix(in oklab, var(--app-border-strong) 75%, transparent);
+  border-radius: 10px;
+  background: rgba(12, 15, 22, 0.4);
 }
 
 .journal-page .journal-nav {
@@ -177,6 +174,37 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .cards-grid > .panel {
     animation: none;
+  }
+}
+
+.sidebar-ambient-rotator {
+  position: relative;
+  width: 100%;
+}
+
+.sidebar-ambient-rotator__panel {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(4px) scale(0.98);
+  transition:
+    opacity 0.4s ease,
+    transform 0.4s ease;
+  pointer-events: none;
+}
+
+.sidebar-ambient-rotator__panel--active {
+  position: relative;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-ambient-rotator__panel {
+    transition: none;
   }
 }
 
@@ -626,42 +654,48 @@ a {
 }
 
 .pr-card {
-  padding: 10px 14px 12px;
+  padding: 14px 16px 14px 18px;
   position: relative;
   z-index: 1;
   overflow: hidden;
-  border-radius: 14px;
+  border-radius: 12px;
   container-type: inline-size;
   container-name: pr-card;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 10px 25px rgba(1, 3, 8, 0.34);
+}
+
+.pr-card:hover {
+  border-color: color-mix(in oklab, var(--app-border-strong) 88%, transparent);
+  background: rgba(22, 26, 38, 0.9);
 }
 
 .pr-card-content {
   min-width: 0;
 }
 
+/* Status filament — thin inset rail, not a full-bleed stripe */
 .pr-card::before {
   content: "";
   position: absolute;
-  inset: 0 0 0 auto;
-  width: 4px;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
   background: #5b6478;
 }
 
 .pr-card.status-approved::before {
-  background: #26c36f;
+  background: #2ecf78;
 }
 
 .pr-card.status-changes::before {
-  background: #d74a54;
+  background: #e25560;
 }
 
 .pr-header {
   display: grid;
-  gap: 5px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .pr-title-row {
@@ -685,56 +719,63 @@ a {
 }
 
 .badge {
-  border: 1px solid #4e5566;
-  border-radius: 999px;
-  font-size: 0.83rem;
+  border: 1px solid color-mix(in oklab, var(--app-border) 90%, transparent);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
   line-height: 1;
-  padding: 5px 8px;
-  color: #e6e9f3;
-  background: rgba(21, 26, 36, 0.62);
+  padding: 4px 7px;
+  color: var(--app-text-soft);
+  background: transparent;
 }
 
 .badge-link {
   text-decoration: none;
-  transition: filter 0.12s ease, border-color 0.12s ease;
+  transition:
+    color 0.12s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
 }
 
 .badge-link:hover {
-  filter: brightness(1.08);
-  border-color: color-mix(in oklab, var(--brand) 55%, var(--app-border-strong));
+  color: var(--brand-bright);
+  border-color: var(--brand-border);
+  background: var(--brand-dim);
 }
 
 .status-pill {
-  border-radius: 999px;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
   line-height: 1;
-  padding: 6px 11px;
-  border: 1px solid;
-  font-weight: 700;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  font-weight: 650;
+  letter-spacing: 0.02em;
 }
 
 .status-pill.status-approved {
-  color: #78f0ab;
-  background: rgba(22, 78, 45, 0.5);
-  border-color: #2a9657;
+  color: #86efac;
+  background: rgba(46, 207, 120, 0.1);
+  border-color: rgba(46, 207, 120, 0.22);
 }
 
 .status-pill.status-changes {
-  color: #ff8892;
-  background: rgba(108, 22, 35, 0.44);
-  border-color: #a43849;
+  color: #fda4af;
+  background: rgba(226, 85, 96, 0.1);
+  border-color: rgba(226, 85, 96, 0.22);
 }
 
 .status-pill.status-pending {
-  color: #f1cf7b;
-  background: rgba(102, 74, 18, 0.44);
-  border-color: #b48a30;
+  color: #fcd34d;
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.22);
 }
 
 .status-pill.status-none {
-  color: #bdc4d9;
-  background: rgba(69, 74, 88, 0.4);
-  border-color: #5f6577;
+  color: var(--app-text-muted);
+  background: rgba(91, 100, 120, 0.12);
+  border-color: rgba(91, 100, 120, 0.22);
 }
 
 .pr-alert-icons {
@@ -744,9 +785,9 @@ a {
 }
 
 .pr-alert-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -756,33 +797,33 @@ a {
 }
 
 .impediment-icon-svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   display: block;
 }
 
 .pr-alert-icon.danger {
-  color: #ffd7dd;
-  background: rgba(136, 34, 46, 0.65);
-  border-color: #d45a69;
+  color: #fda4af;
+  background: rgba(226, 85, 96, 0.12);
+  border-color: rgba(226, 85, 96, 0.28);
 }
 
 .pr-alert-icon.warning {
-  color: #f8e4ad;
-  background: rgba(122, 91, 30, 0.65);
-  border-color: #ddb654;
+  color: #fcd34d;
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.28);
 }
 
 .pr-alert-icon.success {
-  color: #9ef5c8;
-  background: rgba(22, 78, 45, 0.65);
-  border-color: #2a9657;
+  color: #86efac;
+  background: rgba(46, 207, 120, 0.12);
+  border-color: rgba(46, 207, 120, 0.28);
 }
 
 .pr-slack-shared-icon {
-  color: #ddd6fe;
-  background: rgba(76, 58, 120, 0.55);
-  border-color: #8b7cc8;
+  color: #c4b5fd;
+  background: rgba(139, 124, 200, 0.12);
+  border-color: rgba(139, 124, 200, 0.28);
 }
 
 .tooltip-content {
@@ -799,10 +840,11 @@ a {
 
 .pr-link {
   text-decoration: none;
-  color: #f6f8ff;
-  font-size: 1.05rem;
-  font-weight: 700;
-  line-height: 1.2;
+  color: var(--app-text);
+  font-size: 0.98rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-wrap: pretty;
 }
 
 .pr-link:hover {
@@ -853,17 +895,18 @@ a {
 }
 
 .pr-reviewer-group {
-  border: 1px solid #3b4357;
-  border-radius: 10px;
-  padding: 9px 11px;
-  background: rgba(15, 19, 27, 0.62);
+  border: 1px solid color-mix(in oklab, var(--app-border) 65%, transparent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(12, 15, 22, 0.45);
 }
 
 .pr-reviewer-group h4 {
-  margin: 0 0 7px;
-  font-size: 0.78rem;
+  margin: 0 0 8px;
+  font-size: 0.7rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   color: var(--app-text-muted);
 }
 
@@ -957,17 +1000,18 @@ a {
 }
 
 .reviewer-strip {
-  border: 1px solid #3a4359;
-  border-radius: 12px;
-  padding: 9px 11px;
-  background: rgba(14, 19, 28, 0.62);
+  border: 1px solid color-mix(in oklab, var(--app-border) 65%, transparent);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: rgba(12, 15, 22, 0.45);
 }
 
 .reviewer-strip h4 {
-  margin: 0 0 7px;
-  letter-spacing: 0.02em;
-  font-size: 0.78rem;
+  margin: 0 0 8px;
+  letter-spacing: 0.04em;
+  font-size: 0.7rem;
   font-weight: 600;
+  text-transform: uppercase;
   color: var(--app-text-muted);
 }
 
@@ -1068,19 +1112,20 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  margin: 0;
   font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--brand-bright);
 }
 
 .jira-task-dialog__key-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 999px;
   background: var(--brand);
-  box-shadow: 0 0 10px color-mix(in oklab, var(--brand) 80%, transparent);
+  box-shadow: none;
 }
 
 .jira-task-dialog__title {
@@ -1600,31 +1645,39 @@ a {
   align-items: stretch;
   padding: 0;
   overflow: hidden;
-  border-left: 3px solid var(--jira-card-accent, var(--app-border));
+  isolation: isolate;
   transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.jira-issue-card::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--jira-card-accent, #5b6478);
+  z-index: 1;
 }
 
 .jira-issue-card--new {
-  --jira-card-accent: color-mix(in oklab, #94a3b8 70%, var(--app-border));
+  --jira-card-accent: #94a3b8;
 }
 
 .jira-issue-card--indeterminate {
-  --jira-card-accent: color-mix(in oklab, #fbbf24 75%, var(--app-border));
+  --jira-card-accent: #fbbf24;
 }
 
 .jira-issue-card--done {
-  --jira-card-accent: color-mix(in oklab, #34d399 70%, var(--app-border));
+  --jira-card-accent: #34d399;
 }
 
 .jira-issue-card:not(.jira-issue-card--skeleton):hover {
-  border-color: var(--brand-border);
-  box-shadow:
-    0 0 0 1px color-mix(in oklab, var(--brand) 18%, transparent),
-    0 14px 36px rgba(0, 0, 0, 0.28);
-  transform: translateY(-2px);
+  border-color: color-mix(in oklab, var(--brand-border) 70%, var(--app-border));
+  background: rgba(22, 26, 38, 0.9);
 }
 
 .jira-issue-card__main {
@@ -1632,8 +1685,8 @@ a {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 14px 12px 14px 14px;
+  gap: 8px;
+  padding: 14px 8px 14px 16px;
   border: none;
   background: transparent;
   color: inherit;
@@ -1656,8 +1709,8 @@ a {
 
 .jira-issue-card__summary {
   margin: 0;
-  font-size: 0.98rem;
-  font-weight: 620;
+  font-size: 0.95rem;
+  font-weight: 600;
   line-height: 1.4;
   color: var(--app-text);
   text-wrap: pretty;
@@ -1667,34 +1720,41 @@ a {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 8px;
+  gap: 2px 0;
+  margin-top: 2px;
 }
 
 .jira-issue-card__chip {
   display: inline-flex;
-  padding: 2px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--app-border);
-  background: rgba(8, 12, 20, 0.45);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   color: var(--app-text-muted);
 }
 
 .jira-issue-card__chip--muted {
-  opacity: 0.9;
+  opacity: 0.85;
+}
+
+.jira-issue-card__meta > * + *::before {
+  content: "·";
+  margin: 0 8px;
+  color: color-mix(in oklab, var(--app-text-muted) 50%, transparent);
 }
 
 .jira-issue-card__updated {
-  font-size: 0.72rem;
-  color: var(--app-text-muted);
+  font-size: 0.7rem;
+  color: color-mix(in oklab, var(--app-text-muted) 88%, transparent);
 }
 
 .jira-issue-card__status {
   display: inline-flex;
-  padding: 3px 9px;
-  border-radius: 999px;
+  padding: 3px 8px;
+  border-radius: 6px;
   font-size: 0.68rem;
   font-weight: 650;
   letter-spacing: 0.02em;
@@ -1703,44 +1763,43 @@ a {
 
 .jira-issue-card__status--new {
   color: #cbd5e1;
-  background: rgba(148, 163, 184, 0.12);
-  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(148, 163, 184, 0.1);
+  border-color: rgba(148, 163, 184, 0.2);
 }
 
 .jira-issue-card__status--indeterminate {
   color: #fde68a;
-  background: rgba(251, 191, 36, 0.12);
-  border-color: rgba(251, 191, 36, 0.32);
+  background: rgba(251, 191, 36, 0.1);
+  border-color: rgba(251, 191, 36, 0.22);
 }
 
 .jira-issue-card__status--done {
   color: #a7f3d0;
-  background: rgba(52, 211, 153, 0.12);
-  border-color: rgba(52, 211, 153, 0.32);
-}
-
-.jira-issue-card__cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: 2px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--brand-bright);
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.22);
 }
 
 .jira-issue-card__external {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
+  width: 40px;
   flex-shrink: 0;
-  border-left: 1px solid var(--app-border);
+  margin: 8px 8px 8px 0;
+  border-radius: 8px;
+  border: none;
   color: var(--app-text-muted);
   text-decoration: none;
+  opacity: 0.55;
   transition:
     color 0.18s ease,
-    background 0.18s ease;
+    background 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.jira-issue-card:hover .jira-issue-card__external,
+.jira-issue-card:focus-within .jira-issue-card__external {
+  opacity: 1;
 }
 
 .jira-issue-card__external:hover {
@@ -1748,13 +1807,14 @@ a {
   background: var(--brand-dim);
 }
 
-.jira-issue-card--skeleton {
-  border-left-width: 1px;
+.jira-issue-card--skeleton::before {
+  display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .jira-issue-card:not(.jira-issue-card--skeleton):hover {
-    transform: none;
+  .jira-issue-card,
+  .panel {
+    transition: none;
   }
 }
 

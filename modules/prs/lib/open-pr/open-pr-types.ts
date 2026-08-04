@@ -3,6 +3,7 @@ export type OpenPrBranchItem = {
   issueKey: string | null;
   suggestedTitle: string | null;
   jiraSummary: string | null;
+  baseBranch: string | null;
 };
 
 export type OpenPrBranchSource = "jira" | "github";

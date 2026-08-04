@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { StaleDataBanner } from "@/components/stale-data-banner";
+import { Button } from "@/components/ui/button";
 import { isPrMonitorWithData } from "@/modules/app/lib/sync-data-helpers";
 import { usePendingReviewCount } from "@/modules/notifications/hooks/use-pending-review-count";
 import { summarizePrMonitorChanges } from "@/modules/notifications/lib/pr-alert-events";
@@ -13,6 +15,7 @@ import { filterPrsBySearch } from "@/modules/prs/lib/pr-search";
 import { buildPrInsights } from "@/modules/prs/lib/pr-metrics";
 import { usePrMonitorSync } from "@/modules/prs/hooks/use-pr-monitor-sync";
 import { loadPrMonitorLastSync } from "@/modules/prs/lib/pr-monitor-cache";
+import { cn } from "@/lib/utils";
 
 interface Props {
   slackConfigured?: boolean;
@@ -61,7 +64,7 @@ export function PrMonitorPage({ slackConfigured = false }: Props) {
   }
 
   return (
-    <>
+    <div aria-busy={isFetching}>
       {response?.status === "stale" ? (
         <StaleDataBanner
           message={response.message}
@@ -98,9 +101,16 @@ export function PrMonitorPage({ slackConfigured = false }: Props) {
                 <code>gh auth login</code> no terminal e tente novamente.
               </p>
               <div className="mt-8">
-                <button className="button secondary" disabled={isFetching} onClick={() => void refresh()} type="button">
-                  Tentar novamente
-                </button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isFetching}
+                  onClick={() => void refresh()}
+                >
+                  {isFetching ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+                  {isFetching ? "Sincronizando…" : "Tentar novamente"}
+                </Button>
               </div>
             </section>
           )}
@@ -110,9 +120,16 @@ export function PrMonitorPage({ slackConfigured = false }: Props) {
               <h2>Falha na atualizacao</h2>
               <p>{response.message}</p>
               <div className="mt-8">
-                <button className="button secondary" disabled={isFetching} onClick={() => void refresh()} type="button">
-                  Tentar novamente
-                </button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isFetching}
+                  onClick={() => void refresh()}
+                >
+                  {isFetching ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+                  {isFetching ? "Sincronizando…" : "Tentar novamente"}
+                </Button>
               </div>
             </section>
           )}
@@ -123,11 +140,31 @@ export function PrMonitorPage({ slackConfigured = false }: Props) {
         <section className="list-section">
           <PrInsightsPanel insights={insights} />
 
-          <section className="panel status-row">
+          <section className="panel status-row flex flex-wrap items-center justify-between gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isFetching}
+              onClick={() => void refresh()}
+              aria-label={isFetching ? "Sincronizando monitor de PRs" : "Atualizar monitor de PRs"}
+            >
+              {isFetching ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <RefreshCw className="size-4" aria-hidden />
+              )}
+              {isFetching ? "Sincronizando…" : "Atualizar"}
+            </Button>
             <PrSearchBar onDebouncedChange={setSearchQuery} />
           </section>
 
-          <section className="cards-grid">
+          <section
+            className={cn(
+              "cards-grid transition-opacity duration-200",
+              isFetching && "pointer-events-none opacity-60"
+            )}
+          >
             {okData.length === 0 ? (
               <section className="panel pr-card">
                 <p className="small muted">Nenhuma PR aberta encontrada.</p>
@@ -144,6 +181,6 @@ export function PrMonitorPage({ slackConfigured = false }: Props) {
           </section>
         </section>
       ) : null}
-    </>
+    </div>
   );
 }

@@ -11,8 +11,8 @@ vi.mock("@/modules/prs/hooks/use-github-login", () => ({
   useGithubLogin: () => "dev"
 }));
 
-vi.mock("@/modules/prs/components/weather-forecast", () => ({
-  WeatherForecast: () => null
+vi.mock("@/modules/vacation-countdown/components/sidebar-ambient-panel", () => ({
+  SidebarAmbientPanel: () => null
 }));
 
 vi.mock("@/hooks/use-mobile", () => ({
@@ -36,6 +36,10 @@ describe("AppSidebar Devtools footer", () => {
     expect(screen.getByRole("link", { name: /^repositórios$/i })).toHaveAttribute(
       "href",
       "/devtools/repositories"
+    );
+    expect(screen.getByRole("link", { name: /^ambiente local$/i })).toHaveAttribute(
+      "href",
+      "/devtools/local-docker"
     );
   });
 });

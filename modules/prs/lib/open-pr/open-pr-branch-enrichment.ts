@@ -49,7 +49,8 @@ export async function enrichOpenPrBranchItem(
     name: branchName,
     issueKey: meta.issueKey,
     suggestedTitle: meta.suggestedTitle,
-    jiraSummary: meta.jiraSummary
+    jiraSummary: meta.jiraSummary,
+    baseBranch: null
   };
 }
 
@@ -64,7 +65,8 @@ export function enrichOpenPrBranchItemsFromAssigned(
         name: entry.branchName,
         issueKey,
         suggestedTitle: summary ? buildOpenPrTitle(issueKey, summary) : issueKey,
-        jiraSummary: summary || null
+        jiraSummary: summary || null,
+        baseBranch: null
       } satisfies OpenPrBranchItem;
     })
     .sort((a, b) => a.name.localeCompare(b.name));

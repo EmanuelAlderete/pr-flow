@@ -10,6 +10,7 @@ import {
   GitPullRequest,
   LayoutDashboard,
   Ticket,
+  Container,
   Timer,
   Wrench
 } from "lucide-react";
@@ -30,7 +31,7 @@ import {
 } from "@/components/ui/sidebar";
 import { NotificationPreferencesTrigger } from "@/modules/notifications/components/notification-preferences-dialog";
 import { usePendingReviewCount } from "@/modules/notifications/hooks/use-pending-review-count";
-import { WeatherForecast } from "@/modules/prs/components/weather-forecast";
+import { SidebarAmbientPanel } from "@/modules/vacation-countdown/components/sidebar-ambient-panel";
 import { useGithubLogin } from "@/modules/prs/hooks/use-github-login";
 
 const navItems = [
@@ -92,7 +93,7 @@ export function AppSidebar({ initialGithubLogin }: AppSidebarProps) {
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <WeatherForecast variant="sidebar" />
+        <SidebarAmbientPanel />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -190,6 +191,19 @@ export function AppSidebar({ initialGithubLogin }: AppSidebarProps) {
                 >
                   <GitBranch />
                   <span>Repositórios</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={
+                    pathname === "/devtools/local-docker" ||
+                    pathname.startsWith("/devtools/local-docker/")
+                  }
+                  render={<Link href="/devtools/local-docker" />}
+                  tooltip="Portainer e stack Docker local Jusfy"
+                >
+                  <Container />
+                  <span>Ambiente local</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

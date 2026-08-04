@@ -9,8 +9,15 @@ export { createInMemoryLlmGenerator } from "@/modules/llm-generation/lib/in-memo
 
 export {
   createGeminiLlmGenerator,
+  DEFAULT_GEMINI_FALLBACK_MODELS,
+  GEMINI_MAX_ATTEMPTS,
+  GEMINI_MAX_ATTEMPTS_PER_MODEL,
+  GEMINI_RETRY_BASE_DELAY_MS,
+  generateGeminiTextWithRetry,
   getGeminiApiKey,
-  getGeminiModel
+  getGeminiModel,
+  getGeminiModelCandidates,
+  sleepMs
 } from "@/modules/llm-generation/lib/gemini-generator";
 
 export {
@@ -19,8 +26,12 @@ export {
   GeminiRateLimitError,
   GEMINI_RATE_LIMIT_LINK,
   GEMINI_RATE_LIMIT_USER_MESSAGE,
+  GEMINI_UNAVAILABLE_USER_MESSAGE,
+  isGeminiModelNotFoundError,
   isGeminiRateLimitError,
-  toGeminiRateLimitError
+  isGeminiTransientError,
+  toGeminiRateLimitError,
+  toGeminiTransientError
 } from "@/modules/llm-generation/lib/errors";
 
 import { createGeminiLlmGenerator } from "@/modules/llm-generation/lib/gemini-generator";

@@ -24,7 +24,7 @@ Implementação dos tokens: `app/globals.css` (`.dark`).
 
 | Rota | Módulo |
 |------|--------|
-| `/dashboard` | Hub + briefing do dia (IA, atualizado a cada hora) |
+| `/dashboard` | Hub + férias + eventos do dia (iCal Google) + deck de atalhos + streak do journal + briefing (IA, horária) |
 | `/prs` | Minhas pull requests (monitor completo) |
 | `/prs/reviews` | PRs em que sou revisor (fila simples) |
 | `/tasks` | Tarefas abertas/concluídas |
@@ -32,11 +32,12 @@ Implementação dos tokens: `app/globals.css` (`.dark`).
 | `/summaries` | Histórico de resumos (UI pt-BR; redirect legado `/summaries`) |
 | `/jira` | Tickets Jira atribuídos ao usuário |
 | `/devtools/crons` | Forçar execução on-demand dos fluxos agendados (confirmação manual) |
+| `/devtools/local-docker` | Portainer do stack Jusfy local — ligar painel e gerenciar containers |
 | `/api/metrics` | Métricas Prometheus (crons, boot) |
 
 Redirect `/` → `/dashboard`.
 
-Rodapé do sidebar: **Devtools** → Crons, Repositórios. Observabilidade: Grafana em `http://localhost:3848` (Docker Compose; login `admin` / `prflow`).
+Rodapé do sidebar: **Devtools** → Crons, Repositórios, Ambiente local. Observabilidade: Grafana em `http://localhost:3848` (Docker Compose; login `admin` / `prflow`). Stack Jusfy local: `LOCAL_DOCKER_ROOT` + `JUSFY_ROOT` no `.env`; o app executa `docker compose` no host (requer CLI Docker acessível ao processo Node).
 
 ## Comandos
 
@@ -46,7 +47,7 @@ npm test
 npm run build
 ```
 
-Ver `README.md` para Docker, `GH_TOKEN`, `GEMINI_API_KEY`, `JIRA_EMAIL`, `JIRA_TOKEN`. Repositórios GitHub monitorados: cadastro em **Devtools → Repositórios** (tabela `monitored_repositories`); na primeira execução importa `MONITORED_REPOSITORIES` do `.env` se o banco estiver vazio. Crons: `modules/cron-scheduling/` (`startAllCrons` em `instrumentation.ts`). Jira sync 10 min (`DISABLE_JIRA_SYNC_CRON=1`). Briefing horário (`DISABLE_DASHBOARD_BRIEFING_CRON=1`). Resumos meia-noite (`DISABLE_SUMMARY_CRON=1`); no boot, `runSummaryCatchup` consulta `summaries` e gera dias/semana pendentes (até 14 dias) se o app estava offline à meia-noite.
+Ver `README.md` para Docker, `GH_TOKEN`, `GEMINI_API_KEY`, `JIRA_EMAIL`, `JIRA_TOKEN`, `GOOGLE_CALENDAR_ICAL_URL` (feed iCal secreto). Repositórios GitHub monitorados: cadastro em **Devtools → Repositórios** (tabela `monitored_repositories`); na primeira execução importa `MONITORED_REPOSITORIES` do `.env` se o banco estiver vazio. Crons: `modules/cron-scheduling/` (`startAllCrons` em `instrumentation.ts`). Jira sync 10 min (`DISABLE_JIRA_SYNC_CRON=1`). Briefing horário (`DISABLE_DASHBOARD_BRIEFING_CRON=1`). Resumos meia-noite (`DISABLE_SUMMARY_CRON=1`); no boot, `runSummaryCatchup` consulta `summaries` e gera dias/semana pendentes (até 14 dias) se o app estava offline à meia-noite.
 
 ## Convenções de código
 

@@ -107,7 +107,11 @@ export function PrReviewerQueuePage() {
   const githubLogin = hasData ? response.githubLogin : null;
 
   return (
-    <section className="review-queue-page flex flex-col gap-4" aria-label="Fila de revisão">
+    <section
+      className="review-queue-page flex flex-col gap-4"
+      aria-label="Fila de revisão"
+      aria-busy={isFetching}
+    >
       {response?.status === "stale" ? (
         <StaleDataBanner
           message={response.message}
@@ -141,14 +145,14 @@ export function PrReviewerQueuePage() {
             className="review-queue-page__refresh shrink-0"
             disabled={isFetching}
             onClick={() => void refresh()}
-            aria-label="Atualizar fila de revisão"
+            aria-label={isFetching ? "Sincronizando fila de revisão" : "Atualizar fila de revisão"}
           >
             {isFetching ? (
               <Loader2 className="size-4 animate-spin" aria-hidden />
             ) : (
               <RefreshCw className="size-4" aria-hidden />
             )}
-            Atualizar
+            {isFetching ? "Sincronizando…" : "Atualizar"}
           </Button>
         </div>
 
@@ -212,7 +216,12 @@ export function PrReviewerQueuePage() {
               })}
             </div>
 
-            {syncedAt ? (
+            {isFetching ? (
+              <p className="review-queue-page__synced" role="status">
+                <Loader2 className="size-3.5 shrink-0 animate-spin" aria-hidden />
+                Sincronizando com o GitHub…
+              </p>
+            ) : syncedAt ? (
               <p className="review-queue-page__synced">
                 <CircleDashed className="size-3.5 shrink-0" aria-hidden />
                 Sincronizado em {syncedAt}
@@ -239,7 +248,10 @@ export function PrReviewerQueuePage() {
                 disabled={isFetching}
                 onClick={() => void refresh()}
               >
-                Tentar novamente
+                {isFetching ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : null}
+                {isFetching ? "Sincronizando…" : "Tentar novamente"}
               </Button>
             </div>
           </section>
@@ -257,7 +269,10 @@ export function PrReviewerQueuePage() {
                 disabled={isFetching}
                 onClick={() => void refresh()}
               >
-                Tentar novamente
+                {isFetching ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : null}
+                {isFetching ? "Sincronizando…" : "Tentar novamente"}
               </Button>
             </div>
           </section>
@@ -265,36 +280,43 @@ export function PrReviewerQueuePage() {
       </section>
       ) : null}
 
-      {hasData && okData.length === 0 ? (
-        <Surface variant="dashed" className="review-queue-page__empty p-8 text-center">
-          <GitPullRequestArrow className="mx-auto size-10 text-[var(--brand-bright)]/80" aria-hidden />
-          <h2 className="mt-4 text-base font-semibold text-[var(--app-text)]">Nada na fila</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--app-text-muted)]">
-            Nenhuma PR aberta aguardando sua revisão. Quando alguém solicitar você como revisor, ela aparece
-            aqui.
-          </p>
-        </Surface>
-      ) : null}
+      <div
+        className={cn(
+          "flex flex-col gap-4 transition-opacity duration-200",
+          isFetching && hasData && "pointer-events-none opacity-60"
+        )}
+      >
+        {hasData && okData.length === 0 ? (
+          <Surface variant="dashed" className="review-queue-page__empty p-8 text-center">
+            <GitPullRequestArrow className="mx-auto size-10 text-[var(--brand-bright)]/80" aria-hidden />
+            <h2 className="mt-4 text-base font-semibold text-[var(--app-text)]">Nada na fila</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--app-text-muted)]">
+              Nenhuma PR aberta aguardando sua revisão. Quando alguém solicitar você como revisor, ela aparece
+              aqui.
+            </p>
+          </Surface>
+        ) : null}
 
-      {hasData && okData.length > 0 && filtered.length === 0 ? (
-        <Surface variant="dashed" className="review-queue-page__empty p-8 text-center">
-          <p className="text-sm text-[var(--app-text-muted)]">
-            Nenhuma PR corresponde ao filtro{" "}
-            <strong className="text-[var(--app-text)]">{reviewQueueFilterLabel(filter)}</strong>.
-          </p>
-          <Button type="button" variant="ghost" size="sm" className="mt-4" onClick={() => setFilter("all")}>
-            Ver todas
-          </Button>
-        </Surface>
-      ) : null}
+        {hasData && okData.length > 0 && filtered.length === 0 ? (
+          <Surface variant="dashed" className="review-queue-page__empty p-8 text-center">
+            <p className="text-sm text-[var(--app-text-muted)]">
+              Nenhuma PR corresponde ao filtro{" "}
+              <strong className="text-[var(--app-text)]">{reviewQueueFilterLabel(filter)}</strong>.
+            </p>
+            <Button type="button" variant="ghost" size="sm" className="mt-4" onClick={() => setFilter("all")}>
+              Ver todas
+            </Button>
+          </Surface>
+        ) : null}
 
-      {hasData && filtered.length > 0 ? (
-        <ul className="review-queue-page__grid">
-          {filtered.map((pr) => (
-            <PrReviewerQueueItem key={pr.id} pr={pr} />
-          ))}
-        </ul>
-      ) : null}
+        {hasData && filtered.length > 0 ? (
+          <ul className="review-queue-page__grid">
+            {filtered.map((pr) => (
+              <PrReviewerQueueItem key={pr.id} pr={pr} />
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </section>
   );
 }

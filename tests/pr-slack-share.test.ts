@@ -15,16 +15,16 @@ describe("pr-slack-share messages", () => {
     );
   });
 
-  it("monta resposta na thread com links das PRs em lista", () => {
+  it("monta resposta na thread com links das PRs", () => {
     expect(buildSlackPrThreadText(["https://github.com/acme/a/pull/7"])).toBe(
-      "- https://github.com/acme/a/pull/7"
+      "https://github.com/acme/a/pull/7"
     );
     expect(
       buildSlackPrThreadText([
         "https://github.com/acme/a/pull/7",
         "https://github.com/acme/b/pull/3"
       ])
-    ).toBe("- https://github.com/acme/a/pull/7\n- https://github.com/acme/b/pull/3");
+    ).toBe("https://github.com/acme/a/pull/7\nhttps://github.com/acme/b/pull/3");
   });
 
   it("retorna null quando nao ha chave Jira no titulo", () => {
@@ -43,7 +43,7 @@ describe("pr-slack-share messages", () => {
     ).toEqual({
       issueKey: "JOR-42",
       channelText: "JOR-42 - Feature - https://jusfy.atlassian.net/browse/JOR-42",
-      threadText: "- https://github.com/acme/a/pull/7"
+      threadText: "https://github.com/acme/a/pull/7"
     });
   });
 });
@@ -74,7 +74,7 @@ describe("sharePrToSlackChannel", () => {
     });
     expect(postSlackMessage.mock.calls[1]?.[0]).toMatchObject({
       channel: "squad-jornada-pr",
-      text: "- https://github.com/acme/a/pull/7",
+      text: "https://github.com/acme/a/pull/7",
       threadTs: "1234.5678",
       unfurlLinks: false,
       unfurlMedia: false
@@ -96,7 +96,7 @@ describe("sharePrToSlackChannel", () => {
     });
 
     expect(postSlackMessage.mock.calls[1]?.[0]).toMatchObject({
-      text: "- https://github.com/acme/a/pull/7\n- https://github.com/acme/b/pull/3"
+      text: "https://github.com/acme/a/pull/7\nhttps://github.com/acme/b/pull/3"
     });
   });
 });

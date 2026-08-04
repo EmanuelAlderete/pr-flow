@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { JournalPage } from "@/modules/journal/components/journal-page";
 
@@ -8,7 +9,9 @@ export default function JournalRoutePage() {
         title="Journal"
         description="Anotações pessoais por Notebook day — uma Note por dia, em Markdown, sem vínculo com Tasks ou PRs."
       />
-      <JournalPage />
+      <Suspense fallback={null}>
+        <JournalPage />
+      </Suspense>
     </div>
   );
 }

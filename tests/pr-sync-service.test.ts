@@ -26,6 +26,14 @@ vi.mock("@/modules/prs/lib/pr-timeline-repository", () => ({
   insertPrTimelineEvents: (...args: unknown[]) => insertPrTimelineEvents(...args)
 }));
 
+vi.mock("@/modules/prs/lib/open-pr/open-pr-branch-base-sync", () => ({
+  syncOpenPrBranchBaseRedirects: vi.fn().mockResolvedValue({
+    status: "ok",
+    repositoriesChecked: 0,
+    updatedCount: 0
+  })
+}));
+
 vi.mock("@/modules/prs/lib/monitored-repositories-service", () => ({
   getMonitoredRepositorySlugsForSync: vi.fn()
 }));

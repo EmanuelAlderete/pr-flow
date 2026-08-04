@@ -1,126 +1,249 @@
-# MVP Acompanhador de PR (pr-flow)
+# PR Flow
 
-Monitor local para acompanhar PRs abertas de autoria do usuario em multiplos repositorios, com Tasks e Journal no mesmo app.
+Hub local do dia de trabalho: monitora PRs no GitHub, organiza tarefas e journal, sincroniza Jira e gera resumos e briefing com IA — tudo em um único app.
 
-**Docs para agentes:** [AGENTS.md](AGENTS.md) · [docs/shadcn-for-agents.md](docs/shadcn-for-agents.md) · [docs/design-system.md](docs/design-system.md) · [docs/zod-validation.md](docs/zod-validation.md)
+Pensado para quem joga vários repositórios, revisores e tickets ao mesmo tempo e quer um painel próprio, sem depender de dashboards genéricos.
 
-## Pre-requisitos
-
-**Docker (recomendado — plug and play)**
-
-- Docker e Docker Compose
-- Token do GitHub (`GH_TOKEN`) — veja [Como obter o GH_TOKEN](#como-obter-o-gh_token)
-
-**Desenvolvimento local (opcional)**
-
-- Node.js 20+
-- npm
-- GitHub CLI (`gh`) com `gh auth login`, **ou** `GH_TOKEN` no `.env`
+**App:** [http://localhost:3847](http://localhost:3847) · **Grafana:** [http://localhost:3848](http://localhost:3848) (`admin` / `prflow`)
 
 ---
 
-## Inicio rapido com Docker
+## O que o PR Flow faz
 
-### 1. Configurar ambiente
+| Área | O que você ganha |
+|------|------------------|
+| **Dashboard** | Hub do dia: briefing com IA, eventos do Google Calendar, countdown de férias, streak do journal e deck de atalhos pessoais |
+| **PRs** | Monitor das suas PRs abertas (reviewers, status) + fila de reviews + wizard para abrir PR a partir de branches |
+| **Jira** | Tickets atribuídos a você, com sync automático; criação de branch com nome sugerido por IA |
+| **Tasks & Journal** | Tarefas locais e notas markdown por dia (notebook day), com streak de dias úteis |
+| **Resumos** | Resumo diário (Feedback 3×3) e semanal (Bússola de Tendência), gerados à meia-noite |
+| **Slack** | Compartilhar PR no canal do time com um clique |
+| **Devtools** | Forçar crons, gerenciar repositórios monitorados e subir o Portainer do stack Jusfy local |
 
-**Instalação guiada (recomendado para novos devs):**
+---
+
+## Features
+
+### Hub do dia (`/dashboard`)
+- **Briefing horário** — mapa de batalha do dia (fechamento do último dia útil, desbloqueios, foco), gerado com Gemini
+- **Eventos do dia** — compromissos de hoje via feed iCal secreto do Google Calendar
+- **Streak do journal** — sequência de dias úteis com nota; sábado/domingo não quebram a sequência
+- **Countdown de férias** — data no `localStorage`, widget no dashboard (e na sidebar, alternando com o clima)
+- **Deck de atalhos** — links pessoais com ícone, cor e ordem definidos por você
+
+### Pull requests (`/prs`, `/prs/reviews`, `/prs/open`)
+- Mostra só PRs **abertas** do usuário autenticado no GitHub
+- Universo de reviewers = `requested_reviewers`; “avaliou” = qualquer review (`COMMENTED`, `APPROVED`, `CHANGES_REQUESTED`); último review da pessoa vence
+- PR sem reviewers continua visível, com indicador explícito
+- Sync por cron + refresh manual; compartilhamento no Slack
+- **Abrir PR:** descobre branches suas, sugere base, monta título/corpo (IA opcional) e cria via `gh`
+- **Fila de reviews:** PRs em que você é revisor, em lista simples
+
+### Jira (`/jira`)
+- Cache Postgres atualizado a cada ~10 min
+- Detalhe do ticket, linkify de chaves `JOR-xxx` em markdown
+- **Criar branch com IA:** escolher repos monitorados → slug sugerido (`feat/` / `fix/`) → criar refs remotas no GitHub
+
+### Journal & Tasks (`/journal`, `/tasks`)
+- Uma nota markdown ativa por dia (soft-delete); corpo obrigatório
+- Calendário com marcador nos dias que já têm nota
+- Tasks abertas/concluídas ligadas ao notebook day
+
+### Resumos (`/summaries`)
+- Diário e semanal a partir do contexto do notebook day (journal + tasks + Jira + PRs)
+- Catch-up no boot: se o app estava offline à meia-noite, gera até 14 dias pendentes
+- Tom ajustável por nível de carreira (`SUMMARY_CAREER_LEVEL`)
+
+### Devtools & observabilidade
+- **Crons** — disparo on-demand com confirmação
+- **Repositórios** — cadastro em UI (`monitored_repositories`); na 1ª execução importa `MONITORED_REPOSITORIES` do `.env` se o banco estiver vazio
+- **Ambiente local** — Portainer do stack Jusfy (`LOCAL_DOCKER_ROOT` + `JUSFY_ROOT`)
+- Stack Docker com Loki, Prometheus e Grafana (dashboard **PR Flow**)
+
+---
+
+## Startup rápido (Docker)
+
+Pré-requisitos: **Docker** + **Docker Compose**. Token GitHub: veja [Como obter o GH_TOKEN](#como-obter-o-gh_token).
+
+### 1. Instalar
 
 ```bash
 ./scripts/install.sh   # ou: npm run install:docker
 ```
 
-O script pergunta as variáveis necessárias, grava o `.env` e roda `docker compose build`.
+Wizard interativo: coleta GitHub, Gemini, Jira, Calendar e Slack (com links de onde obter cada credencial), valida o essencial, grava o `.env` e faz `docker compose build`.
 
 **Manual:**
 
 ```bash
 cp .env.example .env
+# edite GH_TOKEN e MONITORED_REPOSITORIES
 ```
 
-Edite o `.env` (repos monitorados e token GitHub):
-
-```env
-MONITORED_REPOSITORIES=owner/repo-1,owner/repo-2
-```
-
-**Token GitHub (Docker):** o container **nao** le `~/.config/gh` do seu PC sozinho — so usa `GH_TOKEN` do `.env`. Para copiar o login do `gh` da maquina:
+Se você já usa `gh auth login` no host:
 
 ```bash
-gh auth status          # precisa estar logado no host
-./scripts/sync-gh-env.sh  # ou: npm run gh:sync-env
+gh auth status
+./scripts/sync-gh-env.sh   # copia o token para o .env
 ```
 
-Se aparecer *"not an executable file"*:
-
-```bash
-chmod +x scripts/sync-gh-env.sh
-# ou rode sem permissao de execucao:
-bash scripts/sync-gh-env.sh
-```
-
-Use o **seu usuario** (nao `sudo`). Depois do sync, reinicie o Compose:
-
-```bash
-docker compose up -d --build
-```
-
-Isso grava `GH_TOKEN` no `.env` com o valor de `gh auth token` (OAuth do `gh auth login`). Evita PAT fine-grained sem acesso a org privada.
-
-O `DATABASE_URL` no exemplo ja aponta para o Postgres do Compose (`host: postgres`). Nao precisa alterar para o fluxo Docker.
-
-### 2. Subir tudo
+### 2. Subir
 
 ```bash
 docker compose up --build
+# ou em segundo plano:
+docker compose up -d --build
 ```
 
-Na primeira execucao a imagem e construida, as migrations rodam automaticamente e o app inicia.
+Na primeira execução: build da imagem, migrations e start do app.
 
-### 3. Abrir o app
+### 3. Abrir
 
-[http://localhost:3847](http://localhost:3847)
+| Serviço | URL |
+|---------|-----|
+| **PR Flow** | [http://localhost:3847](http://localhost:3847) |
+| **Grafana** | [http://localhost:3848](http://localhost:3848) — `admin` / `prflow` |
 
-A porta padrao e **3847** (evita conflito com outros servicos na 3000).
+Porta **3847** de propósito (evita briga com outros serviços na 3000).
 
-### 4. Observabilidade (Grafana)
-
-O Compose sobe Loki, Promtail, Prometheus e Grafana junto com o app.
-
-| Servico | URL | Credenciais |
-|---------|-----|-------------|
-| Grafana | [http://localhost:3848](http://localhost:3848) | `admin` / `prflow` |
-| Prometheus | [http://localhost:9090](http://localhost:9090) | — |
-| Loki | [http://localhost:3100](http://localhost:3100) | — |
-
-Dashboard provisionado: **PR Flow** (crons + system logs). Em **Devtools → Crons**, cada job tem link **Ver logs no Grafana**.
-
-System logs saem em JSON Lines no stdout do container (`LOG_FORMAT=json` no Docker). Em `npm run dev` local, o padrao e legivel (`LOG_FORMAT=pretty` opcional).
-
-### Comandos uteis
+### Comandos Docker úteis
 
 ```bash
-# Segundo plano
-docker compose up -d --build
-
-# Ver logs
-docker compose logs -f app
-
-# Parar
-docker compose down
-
-# Parar e apagar dados do Postgres
-docker compose down -v
+docker compose logs -f app   # logs do app
+docker compose down          # parar
+docker compose down -v       # parar e apagar Postgres
 ```
+
+---
+
+## Desenvolvimento local (hot-reload)
+
+Útil quando você quer Next.js no host e só o Postgres no Compose.
+
+```bash
+docker compose up -d postgres
+
+# no .env, use host localhost:
+# DATABASE_URL=postgresql://prflow:prflow@localhost:5432/prflow
+
+npm install
+npm run db:migrate
+npm run dev                  # http://localhost:3847
+```
+
+GitHub no host: `GH_TOKEN` no `.env` **ou** `gh auth login`.
+
+Produção local: `npm run build` e depois `npm run start` (standalone). Não use `next start` direto — rotas como `/api/prs/slack-share` quebram.
+
+---
+
+## Comandos npm
+
+| Comando | Uso |
+|---------|-----|
+| `npm run install:docker` | Wizard `.env` + `docker compose build` |
+| `npm run gh:sync-env` | Copia `gh auth token` → `.env` (Docker) |
+| `npm run dev` | Dev server na porta 3847 |
+| `npm test` | Testes (Vitest) |
+| `npm run test:watch` | Testes em watch |
+| `npm run build` | Build de produção |
+| `npm run start` | Produção local (standalone; requer build) |
+| `npm run db:migrate` | Migrations (drizzle-kit, host) |
+| `npm run db:migrate:docker` | Migrations (mesmo script do container) |
+| `npm run db:generate` | Gerar migration a partir do schema |
+
+---
+
+## Módulos
+
+Código organizado por domínio em `modules/`. Rotas App Router em `app/(shell)/` e `app/api/`.
+
+| Módulo | Responsabilidade |
+|--------|------------------|
+| `dashboard` | Hub, widgets e briefing |
+| `prs` | Monitor, reviews, abrir PR, sync GitHub, Slack share |
+| `jira` | UI e sync de tickets atribuídos |
+| `jira-branch` | Wizard de criação de branch com IA |
+| `jira-issue-key` | Extração/normalização de chaves e linkify |
+| `tasks` | Tarefas locais |
+| `journal` | Notas por dia, streak, marcadores no calendário |
+| `notebook-day` | Contexto do dia para IA (journal + tasks + Jira + PRs) |
+| `summaries` | Resumos diário/semanal e catch-up |
+| `llm-generation` | Seam Gemini (`LlmTextGenerator`) compartilhado |
+| `day-calendar` | Eventos do dia via iCal |
+| `vacation-countdown` | Countdown de férias (`localStorage`) |
+| `shortcut-deck` | Deck de atalhos do dashboard |
+| `cron-scheduling` | Specs e `startAllCrons()` no boot |
+| `devtools` | Runners de cron on-demand, repositórios |
+| `local-docker` | Portainer / stack Jusfy local |
+| `observability` | System logs, métricas Prometheus |
+| `slack` | Integração de envio ao canal |
+| `work-context` | Diálogo de contexto de trabalho |
+| `messages` | Copy pt-BR centralizado |
+| `db` | Drizzle / PostgreSQL |
+| `notifications` | Toasts / feedback de UI |
+
+### Rotas principais
+
+| Rota | Conteúdo |
+|------|----------|
+| `/dashboard` | Hub do dia |
+| `/prs` | Minhas PRs |
+| `/prs/reviews` | Fila de reviews |
+| `/prs/open` | Wizard abrir PR |
+| `/jira` | Tickets Jira |
+| `/tasks` | Tarefas |
+| `/journal` | Journal |
+| `/summaries` | Histórico de resumos |
+| `/devtools/crons` | Disparo manual de crons |
+| `/devtools/local-docker` | Ambiente local Jusfy |
+| `/api/metrics` | Métricas Prometheus |
+
+`/` redireciona para `/dashboard`.
+
+### Crons (no boot)
+
+| Job | Frequência | Desligar com |
+|-----|------------|--------------|
+| Sync de PRs | periódico | `DISABLE_PR_SYNC_CRON=1` |
+| Sync Jira | a cada 10 min | `DISABLE_JIRA_SYNC_CRON=1` |
+| Briefing do dashboard | horária | `DISABLE_DASHBOARD_BRIEFING_CRON=1` |
+| Resumos diário/semanal | meia-noite | `DISABLE_SUMMARY_CRON=1` |
+
+Fuso padrão: `America/Sao_Paulo` (`SUMMARY_CRON_TZ`).
+
+---
+
+## Variáveis de ambiente
+
+| Variável | Obrigatória | Descrição |
+|----------|-------------|-----------|
+| `GH_TOKEN` | Sim (PRs) | Token GitHub — ver [abaixo](#como-obter-o-gh-token) |
+| `MONITORED_REPOSITORIES` | Sim (PRs) | `owner/repo` separados por vírgula (seed inicial) |
+| `DATABASE_URL` | Sim | PostgreSQL |
+| `GEMINI_API_KEY` | Sim (IA) | [Google AI Studio](https://aistudio.google.com/apikey) |
+| `GEMINI_MODEL` | Não | Padrão `gemini-2.5-flash` |
+| `GEMINI_MODEL_FALLBACK` | Não | Modelos reserva (vírgula) se 503 |
+| `JIRA_EMAIL` / `JIRA_TOKEN` | Sim (Jira) | [API token Atlassian](https://id.atlassian.com/manage-profile/security/api-tokens) |
+| `JIRA_SITE_URL` | Não | Padrão `https://jusfy.atlassian.net` |
+| `SLACK_BOT_OAUTH_TOKEN` | Não | Bot com escopo `chat:write` |
+| `SLACK_PR_CHANNEL` | Não | Padrão `squad-jornada-pr` |
+| `GOOGLE_CALENDAR_ICAL_URL` | Não | Feed iCal secreto (não commitar) |
+| `SUMMARY_CAREER_LEVEL` | Não | `junior` \| `pleno` \| `senior` |
+| `PORT` | Não | Padrão **3847** |
+| `LOCAL_DOCKER_ROOT` / `JUSFY_ROOT` | Não | Stack Jusfy no Devtools |
+| `LOCAL_DOCKER_PORTAINER_URL` | Não | Padrão `https://localhost:9443` |
+
+Lista completa e flags de cron: `.env.example`.
 
 ---
 
 ## Como obter o GH_TOKEN
 
-O app chama o `gh` CLI. No Docker, a autenticacao vem da variavel `GH_TOKEN`.
+No Docker o container **não** lê `~/.config/gh` sozinho — só usa `GH_TOKEN` do `.env`.
 
-### Opcao A — igual ao `npm run dev` (recomendado)
-
-Se voce ja usa `gh auth login` no host:
+### Opção A — igual ao `npm run dev` (recomendado)
 
 ```bash
 gh auth status
@@ -128,125 +251,23 @@ gh auth status
 docker compose up -d --build
 ```
 
-Equivalente manual: coloque `GH_TOKEN=$(gh auth token)` no `.env` (sem `sudo`).
+### Opção B — Personal Access Token
 
-O Docker **nao** monta o `gh` do host automaticamente; este script apenas **copia o token** para o `.env`.
+1. [GitHub → Personal access tokens](https://github.com/settings/tokens)
+2. Classic (`ghp_...`) ou fine-grained (`github_pat_...`)
+3. Escopos mínimos: **repo**, **read:user**
+4. Org privada com SSO: **Configure SSO** e autorize a org
+5. Fine-grained: inclua cada repo de `MONITORED_REPOSITORIES`
 
-### Opcao B — Personal Access Token
-
-1. Abra [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens).
-2. Crie um token classic (`ghp_...`) ou fine-grained (`github_pat_...`).
-3. Escopos minimos: **repo**, **read:user**.
-4. Para org privada com SSO: em [tokens](https://github.com/settings/tokens), clique **Configure SSO** e autorize a org (ex.: `jusfy`).
-5. Fine-grained: inclua explicitamente cada repo em `MONITORED_REPOSITORIES`.
-
-```env
-GH_TOKEN=github_pat_xxxxxxxx
-```
-
-### Opcao C — montar credenciais do host (sem GH_TOKEN no .env)
+### Opção C — montar credenciais do host
 
 ```bash
 UID=$(id -u) GID=$(id -g) docker compose -f docker-compose.yml -f docker-compose.gh-host.yml up --build
 ```
 
-### Erro: "Could not resolve to a Repository"
+**Erro "Could not resolve to a Repository":** token sem acesso aos repos (SSO/PAT). Rode `./scripts/sync-gh-env.sh` ou autorize o PAT na org.
 
-`gh auth status` ok, mas GraphQL falha no Docker: o `GH_TOKEN` do `.env` nao tem acesso aos repos (PAT sem SSO da org ou sem permissao). Rode `./scripts/sync-gh-env.sh` ou autorize o PAT na org.
-
-Trate o token como senha: nao commite o `.env` e revogue no GitHub se vazar.
-
----
-
-## Desenvolvimento local (sem container do app)
-
-Util se voce quiser hot-reload do Next.js na maquina host.
-
-### 1. Postgres via Docker
-
-```bash
-docker compose up -d postgres
-```
-
-### 2. `.env` para o host
-
-```env
-PORT=3847
-GH_TOKEN=github_pat_xxxxxxxx
-MONITORED_REPOSITORIES=owner/repo-1,owner/repo-2
-DATABASE_URL=postgresql://prflow:prflow@localhost:5432/prflow
-```
-
-### 3. Instalar e migrar
-
-```bash
-npm install
-npm run db:migrate
-```
-
-### 4. Rodar
-
-```bash
-npm run dev
-```
-
-App em [http://localhost:3847](http://localhost:3847).
-
-Autenticacao GitHub no host: use `GH_TOKEN` no `.env` **ou** `gh auth login`.
-
-Para testar build de producao na maquina: `npm run build` e depois `npm run start`. Nao use `next start` direto — o projeto usa `output: "standalone"` e rotas como `/api/prs/slack-share` retornam 404 com o servidor errado.
-
----
-
-## Variaveis de ambiente
-
-| Variavel | Obrigatoria | Descricao |
-|----------|-------------|-----------|
-| `GH_TOKEN` | Sim (PRs) | Token GitHub (`gh auth token` ou PAT); ver [Como obter o GH_TOKEN](#como-obter-o-gh_token) |
-| `MONITORED_REPOSITORIES` | Sim (PRs) | Lista `owner/repo` separada por virgula |
-| `DATABASE_URL` | Sim (Tasks/Journal/Dashboard) | URL PostgreSQL |
-| `GEMINI_API_KEY` | Sim (resumo diario) | Chave da API Gemini ([Google AI Studio](https://aistudio.google.com/apikey)) |
-| `GEMINI_MODEL` | Nao | Modelo Gemini (padrao `gemini-2.5-flash`) |
-| `JIRA_EMAIL` | Sim (modulo Jira) | E-mail da conta Atlassian usada no token |
-| `JIRA_TOKEN` | Sim (modulo Jira) | API token do Jira ([Atlassian](https://id.atlassian.com/manage-profile/security/api-tokens)) |
-| `JIRA_SITE_URL` | Nao | URL do site (padrao `https://jusfy.atlassian.net`) |
-| `JIRA_SPRINT_PROJECT_KEY` | Nao | Projeto para listar sprints (padrao `JOR`) |
-| `JIRA_SPRINT_BOARD_ID` | Nao | Board Scrum fixo; se omitido, usa o board scrum do projeto |
-| `DISABLE_JIRA_SYNC_CRON` | Nao | Defina `1` para desligar a sincronizacao automatica do Jira com o Postgres |
-| `DISABLE_PR_SYNC_CRON` | Nao | Defina `1` para desligar a sincronizacao automatica de PRs |
-| `DISABLE_SUMMARY_CRON` | Nao | Defina `1` para desligar resumos diario/semanal (meia-noite) |
-| `DISABLE_DASHBOARD_BRIEFING_CRON` | Nao | Defina `1` para desligar o briefing horario do dashboard |
-| `SUMMARY_CRON_TZ` | Nao | Fuso dos crons de resumo e briefing (padrao `America/Sao_Paulo`) |
-| `PORT` | Nao | Porta HTTP (padrao **3847**) |
-| `SLACK_BOT_OAUTH_TOKEN` | Nao (Slack) | Bot token para enviar PRs ao canal `squad-jornada-pr` (escopo `chat:write`) |
-| `SLACK_PR_CHANNEL` | Nao | Canal Slack para PRs (padrao `squad-jornada-pr`) |
-
-O modulo Jira le tickets, sprints e detalhes do PostgreSQL. Uma cron interna (`*/10 * * * *`) atualiza o cache a partir da API do Jira na subida do servidor e a cada 10 minutos. A primeira carga ocorre ao iniciar o app; ate la a UI pode retornar 503.
-
----
-
-## Comandos npm
-
-```bash
-npm test              # testes
-npm run build         # build de producao
-npm run start         # producao local (standalone; requer build antes)
-npm run install:docker  # wizard .env + docker compose build
-npm run gh:sync-env   # copia gh auth token -> .env (Docker)
-npm run db:migrate    # migrations (drizzle-kit, dev local)
-npm run db:migrate:docker  # migrations via drizzle-orm (mesmo script do container)
-```
-
----
-
-## Comportamentos principais do MVP
-
-- Mostra somente PRs abertas do usuario autenticado no GitHub
-- Usa apenas `requested_reviewers` como universo esperado
-- Considera "avaliou" como qualquer review (`COMMENTED`, `APPROVED`, `CHANGES_REQUESTED`)
-- Quando ha varios reviews da mesma pessoa, o ultimo review vence
-- PR sem reviewers solicitados continua visivel com indicador explicito
-- Atualiza automaticamente via polling e permite refresh manual
+Trate o token como senha: não commite o `.env`.
 
 ---
 
@@ -254,8 +275,35 @@ npm run db:migrate:docker  # migrations via drizzle-orm (mesmo script do contain
 
 ```
 docker compose
-├── postgres   — PostgreSQL 16 (volume persistente)
-└── app        — Next.js + gh CLI + migrations no startup
+├── postgres     — PostgreSQL 16 (volume persistente)
+├── app          — Next.js + gh CLI + migrations no startup
+├── prometheus   — métricas (:9090)
+├── loki         — logs (:3100)
+├── promtail     — coleta stdout do app
+└── grafana      — dashboards (:3848)
 ```
 
-O container `app` recebe do `.env` (interpolacao do Compose) `GH_TOKEN`, `MONITORED_REPOSITORIES`, credenciais Jira (`JIRA_EMAIL`, `JIRA_TOKEN`, opcionais `JIRA_*`), Gemini e Slack (`SLACK_BOT_OAUTH_TOKEN`, opcional `SLACK_PR_CHANNEL`). Prefira `GH_TOKEN` de `gh auth token` para paridade com o host. Alternativa: `docker-compose.gh-host.yml` monta `~/.config/gh`.
+System logs em JSON Lines no Docker (`LOG_FORMAT=json`). Em `npm run dev`, o padrão é legível (`LOG_FORMAT=pretty` opcional). Em **Devtools → Crons**, cada job tem link **Ver logs no Grafana**.
+
+---
+
+## Stack
+
+- **Next.js** (App Router) · React · TypeScript
+- **Tailwind v4** + **shadcn/ui**
+- **PostgreSQL** + **Drizzle**
+- **GitHub CLI** / `GH_TOKEN` para PRs
+- **Gemini** para resumos, briefing e sugestões
+- UI em **pt-BR**; código e identificadores em **inglês**
+
+---
+
+## Docs para agentes e contribuidores
+
+| Doc | Quando usar |
+|-----|-------------|
+| [AGENTS.md](AGENTS.md) | Rotas, stack, convenções rápidas |
+| [CONTEXT.md](CONTEXT.md) | Vocabulário de domínio (notebook day, briefing vs resumo, streak…) |
+| [docs/design-system.md](docs/design-system.md) | Tokens, Surface, acento ember |
+| [docs/shadcn-for-agents.md](docs/shadcn-for-agents.md) | Preferência por componentes shadcn |
+| [docs/zod-validation.md](docs/zod-validation.md) | Validação de request/env/APIs externas |

@@ -189,6 +189,56 @@ function buildCompareRef(baseBranch: string, branch: string): string {
   return `${encodeURIComponent(baseBranch)}...${encodeURIComponent(branch)}`;
 }
 
+type CompareSummary = {
+  status?: string;
+  ahead_by?: number;
+};
+
+async function fetchCompareSummary(
+  repository: string,
+  baseBranch: string,
+  branch: string,
+  run: CommandRunner = defaultRunner
+): Promise<CompareSummary | null> {
+  const { owner, name } = parseRepo(repository);
+  const compareRef = buildCompareRef(baseBranch, branch);
+  const output = await run([
+    "api",
+    `/repos/${owner}/${name}/compare/${compareRef}`,
+    "--jq",
+    "{status: .status, ahead_by: .ahead_by}"
+  ]);
+
+  if (output.exitCode !== 0) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(output.stdout) as CompareSummary;
+  } catch {
+    return null;
+  }
+}
+
+/** True when all commits of `branch` are contained in `intoBranch` (merged). */
+export async function isBranchFullyMergedInto(
+  repository: string,
+  branch: string,
+  intoBranch: string,
+  run: CommandRunner = defaultRunner
+): Promise<boolean> {
+  if (branch === intoBranch) {
+    return true;
+  }
+
+  const summary = await fetchCompareSummary(repository, intoBranch, branch, run);
+  if (!summary) {
+    return false;
+  }
+
+  return summary.ahead_by === 0 || summary.status === "identical";
+}
+
 export async function fetchBranchDiff(
   repository: string,
   branch: string,

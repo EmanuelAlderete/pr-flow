@@ -37,7 +37,8 @@ describe("open-pr-branch-enrichment", () => {
         name: "feat/JOR-9/x",
         issueKey: "JOR-9",
         suggestedTitle: "JOR-9 - Bug fix",
-        jiraSummary: "Bug fix"
+        jiraSummary: "Bug fix",
+        baseBranch: null
       }
     ]);
   });

@@ -9,13 +9,8 @@ const notebookDayField = z
 
 const noteBodyField = z
   .string()
-  .transform((value) => value.trim())
-  .pipe(
-    z
-      .string()
-      .min(1, "Corpo da nota é obrigatório.")
-      .max(BODY_MAX, `Corpo da nota deve ter no máximo ${BODY_MAX} caracteres.`)
-  );
+  .max(BODY_MAX, `Corpo da nota deve ter no máximo ${BODY_MAX} caracteres.`)
+  .refine((value) => value.trim().length > 0, "Corpo da nota é obrigatório.");
 
 export const createNoteSchema = z.object({
   notebookDay: notebookDayField,

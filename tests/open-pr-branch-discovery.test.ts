@@ -32,7 +32,8 @@ describe("discoverOpenPrBranches", () => {
         name: entry.branchName,
         issueKey: null,
         suggestedTitle: null,
-        jiraSummary: null
+        jiraSummary: null,
+        baseBranch: null
       }))
     );
   });
@@ -40,7 +41,7 @@ describe("discoverOpenPrBranches", () => {
   it("retorna do cache sem chamar GitHub", async () => {
     getCachedOpenPrBranches.mockReturnValue({
       status: "ok",
-      branches: [{ name: "feat/JOR-1/x", issueKey: "JOR-1", suggestedTitle: null, jiraSummary: null }],
+      branches: [{ name: "feat/JOR-1/x", issueKey: "JOR-1", suggestedTitle: null, jiraSummary: null, baseBranch: null }],
       githubLogin: "dev",
       branchSource: "github"
     });
@@ -59,7 +60,8 @@ describe("discoverOpenPrBranches", () => {
         name: "feat/jor-9/x",
         issueKey: "JOR-9",
         suggestedTitle: "JOR-9 - X",
-        jiraSummary: "X"
+        jiraSummary: "X",
+        baseBranch: null
       }
     ]);
 

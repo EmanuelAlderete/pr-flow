@@ -6,7 +6,7 @@ Especificação visual para manter consistência entre módulos (PRs, Tasks, Jou
 ## Direção
 
 - **Produto:** cockpit local para dev — monitor de PRs + produtividade pessoal (tasks, journal, resumos IA).
-- **Tom:** escuro, utilitário, “mission control”; profundidade com glass panels, não flat genérico.
+- **Tom:** escuro, utilitário, “mission control”; superfícies quietas com borda fina — profundidade por hierarquia tipográfica, não por glass/glow empilhado.
 - **Tema:** apenas **dark** (`<html class="dark">` em `app/layout.tsx`).
 - **Idioma da UI:** **pt-BR** (labels, aria-labels, mensagens). Evitar misturar EN (“Open Tasks”, “Create”, etc.).
 
@@ -24,7 +24,7 @@ Cor de marca: **laranja ember** — quente, legível no navy, distinta de status
 | `--app-link` | `#ffc18a` | Links em prose/markdown |
 | `--app-accent` | `var(--brand-bright)` | Destaques de texto (stats, etc.) |
 
-**Não usar laranja** para status de PR (approved / pending / changes) — esses têm paleta própria em `.pr-card`, `.status-pill`, barra lateral do card.
+**Não usar laranja** para status de PR (approved / pending / changes) — esses têm paleta própria em `.pr-card`, `.status-pill`, filamento lateral do card.
 
 Alternativas consideradas (se mudar marca no futuro): âmbar (próximo demais do pending), ciano (frio demais), magenta (conflita com destructive).
 
@@ -59,6 +59,8 @@ Wrapper padrão para blocos de conteúdo:
 | `inset` | `.panel-inset` | Itens internos, textarea, listas |
 | `dashed` | `.panel-dashed` | Empty states |
 
+`.panel`: fill escuro semitransparente, borda hairline, highlight inset mínimo no topo — **sem** barra de marca à esquerda e **sem** radial de ember no card. Status de domínio (PR/Jira) usa filamento de 2px na borda esquerda.
+
 **Tasks / Journal / Dashboard / Resumos:** usar `Surface` + shadcn (`Button`, `Input`, `Dialog`).
 
 **Módulo PRs:** mantém classes legadas `.panel`, `.pr-card`, `.button` em `globals.css` (já alinhadas aos tokens de marca).
@@ -83,8 +85,8 @@ Não reutilizar para marca global:
 
 | Estado | Indicador |
 |--------|-----------|
-| Aprovada / pronta | Verde (`status-approved`, barra `#26c36f`) |
-| Pendente, alterações, conflitos, sem reviewers | Vermelho (`status-changes`, barra `#d74a54`) |
+| Aprovada / pronta | Verde (`status-approved`, filamento `#2ecf78`) |
+| Pendente, alterações, conflitos, sem reviewers | Vermelho (`status-changes`, filamento `#e25560`) |
 
 ## Motion
 
@@ -114,4 +116,4 @@ Não reutilizar para marca global:
 
 ---
 
-*Última revisão: 2026-05-29 — acento ember, sistema Surface unificado.*
+*Última revisão: 2026-07-29 — cards minimalistas (filamento de status, panel quieto).*

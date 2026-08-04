@@ -1,4 +1,4 @@
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, lte, sql } from "drizzle-orm";
 import {
   normalizeJiraIssueKey,
   postgresWordBoundaryPattern,
@@ -50,6 +50,23 @@ export async function getActiveNoteByNotebookDay(notebookDay: string): Promise<N
     .where(and(eq(notes.notebookDay, notebookDay), isNull(notes.deletedAt)));
 
   return row ? toNoteDto(row) : null;
+}
+
+/** Active notebook days with a note in `[from, to]` (inclusive), ascending. */
+export async function listActiveNotebookDaysBetween(
+  from: string,
+  to: string
+): Promise<string[]> {
+  const db = getDb();
+  const rows = await db
+    .select({ notebookDay: notes.notebookDay })
+    .from(notes)
+    .where(
+      and(isNull(notes.deletedAt), gte(notes.notebookDay, from), lte(notes.notebookDay, to))
+    )
+    .orderBy(asc(notes.notebookDay));
+
+  return rows.map((row) => row.notebookDay);
 }
 
 export async function createNote(input: ValidatedCreateNoteInput): Promise<NoteDto | null> {

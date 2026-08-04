@@ -7,6 +7,7 @@ import {
   savePrCaches,
   savePrSyncMeta
 } from "@/modules/prs/lib/pr-cache-repository";
+import { syncOpenPrBranchBaseRedirects } from "@/modules/prs/lib/open-pr/open-pr-branch-base-sync";
 import { detectPrTimelineEvents } from "@/modules/prs/lib/pr-timeline-detect";
 import { insertPrTimelineEvents } from "@/modules/prs/lib/pr-timeline-repository";
 import { getMonitoredRepositorySlugsForSync } from "@/modules/prs/lib/monitored-repositories-service";
@@ -25,6 +26,19 @@ export async function syncPrCache(): Promise<PrSyncResult> {
   const repos = await getMonitoredRepositorySlugsForSync();
   if (repos.length === 0) {
     return { status: "skipped", prCount: 0, error: "Nenhum repositório cadastrado." };
+  }
+
+  try {
+    await syncOpenPrBranchBaseRedirects();
+  } catch (error) {
+    writeSystemLogFireAndForget({
+      level: "warn",
+      source: PRS_SYNC_LOG_SOURCE,
+      message: "Falha ao redirecionar branches destino do wizard abrir PR.",
+      details: {
+        error: error instanceof Error ? error.message : String(error)
+      }
+    });
   }
 
   const result = await getPrSyncData();

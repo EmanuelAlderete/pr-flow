@@ -21,6 +21,7 @@ import type { WorkContext, WorkContextGap } from "@/modules/work-context/lib/dom
 import { getJiraBrowseUrl } from "@/modules/jira-issue-key";
 import { jiraStatusPillClass } from "@/modules/jira/lib/jira-issue-status";
 import { cn } from "@/lib/utils";
+import { JiraBranchContextMenu } from "@/modules/jira-branch/components/jira-branch-context-menu";
 
 type Props = {
   issueKey: string;
@@ -140,7 +141,12 @@ export function WorkContextDialog({ issueKey, open, onOpenChange }: Props) {
         className="work-context-dialog jira-task-dialog max-w-none w-[min(52rem,calc(100vw-2rem))]"
         aria-describedby={undefined}
       >
-        <div className="jira-task-dialog__shell panel">
+        <JiraBranchContextMenu
+          issueKey={issueKey}
+          issueTypeName={summary?.issueTypeName}
+          summary={summary?.summary ?? context?.jira.detail?.summary}
+        >
+          <div className="jira-task-dialog__shell panel">
           <header className="jira-task-dialog__header">
             <div className="min-w-0 flex-1">
               <p className="jira-task-dialog__key">
@@ -285,7 +291,8 @@ export function WorkContextDialog({ issueKey, open, onOpenChange }: Props) {
               </>
             ) : null}
           </div>
-        </div>
+          </div>
+        </JiraBranchContextMenu>
       </DialogContent>
     </Dialog>
   );

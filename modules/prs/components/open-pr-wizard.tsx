@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Eye, GitBranch, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ type BranchItem = {
   issueKey: string | null;
   suggestedTitle: string | null;
   jiraSummary: string | null;
+  baseBranch: string | null;
 };
 
 type EditorMode = "edit" | "preview";
@@ -50,13 +52,18 @@ function parseReviewersText(value: string): string[] {
 }
 
 export function OpenPrWizard() {
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(0);
   const [repositories, setRepositories] = useState<RepositoryItem[]>([]);
   const [repositoriesLoading, setRepositoriesLoading] = useState(true);
   const [repositoriesError, setRepositoriesError] = useState<string | null>(null);
 
   const [repository, setRepository] = useState("");
+  const [defaultBranch, setDefaultBranch] = useState("");
   const [baseBranch, setBaseBranch] = useState("");
+  const [baseBranchOptions, setBaseBranchOptions] = useState<string[]>([]);
+  const [baseBranchesLoading, setBaseBranchesLoading] = useState(false);
+  const [baseBranchesError, setBaseBranchesError] = useState<string | null>(null);
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(false);
   const [branchesError, setBranchesError] = useState<string | null>(null);
@@ -106,6 +113,83 @@ export function OpenPrWizard() {
       });
 
     return () => controller.abort();
+  }, []);
+
+  const queryRepository = searchParams.get("repository") ?? "";
+  const queryBranch = searchParams.get("branch") ?? "";
+  const queryInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (queryInitializedRef.current || repositoriesLoading || repositories.length === 0) {
+      return;
+    }
+    if (!queryRepository) {
+      return;
+    }
+
+    const selected = repositories.find((item) => item.repository === queryRepository);
+    if (!selected) {
+      return;
+    }
+
+    queryInitializedRef.current = true;
+    setRepository(queryRepository);
+    setDefaultBranch(selected.defaultBranch);
+    setBaseBranch(selected.defaultBranch);
+    setStep(1);
+
+    if (queryBranch) {
+      setManualBranchName(queryBranch);
+      setSelectedBranch(null);
+    }
+  }, [queryBranch, queryRepository, repositories, repositoriesLoading]);
+
+  const loadBaseBranches = useCallback(async (repo: string, signal?: AbortSignal) => {
+    setBaseBranchesLoading(true);
+    setBaseBranchesError(null);
+    setBaseBranchOptions([]);
+
+    try {
+      const response = await fetch(
+        `/api/prs/open/base-branches?repository=${encodeURIComponent(repo)}`,
+        { signal }
+      );
+      const payload = (await response.json()) as {
+        defaultBranch?: string;
+        baseBranches?: string[];
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Falha ao carregar branches destino.");
+      }
+
+      if (signal?.aborted) {
+        return;
+      }
+
+      const nextDefaultBranch = payload.defaultBranch ?? "";
+      const options = payload.baseBranches ?? [];
+      setDefaultBranch(nextDefaultBranch);
+      setBaseBranchOptions(options);
+      setBaseBranch((current) => {
+        if (current.length > 0 && options.includes(current)) {
+          return current;
+        }
+        return nextDefaultBranch;
+      });
+    } catch (error) {
+      if (signal?.aborted) {
+        return;
+      }
+      const message =
+        error instanceof Error ? error.message : "Falha ao carregar branches destino.";
+      setBaseBranchesError(message);
+    } finally {
+      if (!signal?.aborted) {
+        setBaseBranchesLoading(false);
+      }
+    }
   }, []);
 
   const loadBranches = useCallback(async (repo: string, signal?: AbortSignal) => {
@@ -163,11 +247,12 @@ export function OpenPrWizard() {
     const controller = new AbortController();
     branchesAbortRef.current = controller;
     void loadBranches(repository, controller.signal);
+    void loadBaseBranches(repository, controller.signal);
 
     return () => {
       controller.abort();
     };
-  }, [repository, loadBranches]);
+  }, [repository, loadBranches, loadBaseBranches]);
 
   const generateBody = useCallback(
     async (repo: string, branch: BranchItem, prTitle: string, targetBaseBranch: string) => {
@@ -227,7 +312,8 @@ export function OpenPrWizard() {
       name,
       issueKey: extractJiraIssueKeyFromBranch(name),
       suggestedTitle: null,
-      jiraSummary: null
+      jiraSummary: null,
+      baseBranch: null
     };
   }, [selectedBranch, manualBranchName]);
 
@@ -243,10 +329,10 @@ export function OpenPrWizard() {
 
   function canAdvance(): boolean {
     if (step === 0) {
-      return repository.length > 0 && baseBranch.length > 0;
+      return repository.length > 0;
     }
     if (step === 1) {
-      return effectiveBranch !== null;
+      return effectiveBranch !== null && baseBranch.length > 0 && !baseBranchesLoading;
     }
     if (step === 2) {
       return title.trim().length > 0 && body.trim().length > 0 && !bodyLoading;
@@ -380,6 +466,7 @@ export function OpenPrWizard() {
                   }
                   setRepository(value);
                   const selected = repositories.find((item) => item.repository === value);
+                  setDefaultBranch(selected?.defaultBranch ?? "");
                   setBaseBranch(selected?.defaultBranch ?? "");
                 }}
               >
@@ -422,6 +509,11 @@ export function OpenPrWizard() {
                   const branch = branches.find((item) => item.name === value) ?? null;
                   setSelectedBranch(branch);
                   setManualBranchName("");
+                  if (branch?.baseBranch) {
+                    setBaseBranch(branch.baseBranch);
+                  } else if (defaultBranch) {
+                    setBaseBranch(defaultBranch);
+                  }
                 }}
               >
                 <SelectTrigger className="max-w-xl" aria-label="Branch">
@@ -439,6 +531,46 @@ export function OpenPrWizard() {
                 </SelectContent>
               </Select>
             ) : null}
+            <div className="space-y-2">
+              <label htmlFor="open-pr-base-branch" className="text-sm font-medium text-[var(--app-text)]">
+                Branch destino (base)
+              </label>
+              <p className="text-xs text-[var(--app-text-muted)]">
+                Usada no diff e ao abrir a PR. Se a base for mergeada na{" "}
+                <span className="font-mono">{defaultBranch || "master"}</span>, o destino é atualizado
+                automaticamente na sincronização.
+              </p>
+              {baseBranchesLoading ? (
+                <Skeleton className="h-10 w-full max-w-md" />
+              ) : baseBranchesError ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {baseBranchesError}
+                </p>
+              ) : (
+                <Select
+                  value={baseBranch}
+                  onValueChange={(value) => {
+                    if (typeof value === "string" && value.length > 0) {
+                      setBaseBranch(value);
+                    }
+                  }}
+                >
+                  <SelectTrigger id="open-pr-base-branch" className="max-w-md" aria-label="Branch destino">
+                    <SelectValue placeholder="Selecione a branch destino" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {baseBranchOptions.map((branchName) => (
+                      <SelectItem key={branchName} value={branchName}>
+                        <span className="font-mono text-xs">{branchName}</span>
+                        {branchName === defaultBranch ? (
+                          <span className="text-[var(--app-text-muted)]"> (padrão)</span>
+                        ) : null}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
             {!branchesLoading ? (
               <div className="space-y-2">
                 <label htmlFor="open-pr-manual-branch" className="text-sm font-medium text-[var(--app-text)]">

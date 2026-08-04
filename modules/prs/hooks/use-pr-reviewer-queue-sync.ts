@@ -35,13 +35,43 @@ async function fetchReviewerQueueFromApi(): Promise<{ ok: boolean; body: Reviewe
   return { ok: result.ok, body };
 }
 
+async function syncPrCacheFromApi(): Promise<void> {
+  await fetch("/api/prs", { method: "POST", cache: "no-store" });
+}
+
+function resolveQueueResponse(
+  ok: boolean,
+  body: ReviewerQueueApiResponse,
+  fallbackMessage: string
+): ReviewerQueueApiResponse {
+  if (body.status === "stale") {
+    return body;
+  }
+
+  if (!ok && body.status === "error") {
+    return staleFromLocalCache(body.message) ?? body;
+  }
+
+  if (!ok) {
+    return (
+      staleFromLocalCache(fallbackMessage) ?? {
+        status: "error",
+        message: fallbackMessage
+      }
+    );
+  }
+
+  persistSuccessfulSync(body);
+  return body;
+}
+
 export function usePrReviewerQueueSync() {
   const [response, setResponse] = useState<ReviewerQueueApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const inFlightRef = useRef(false);
 
-  const load = useCallback(async () => {
+  const runLoad = useCallback(async (options?: { syncFirst?: boolean }) => {
     if (inFlightRef.current) {
       return null;
     }
@@ -53,57 +83,39 @@ export function usePrReviewerQueueSync() {
       setLoading(true);
     }
 
+    const fallbackMessage = options?.syncFirst
+      ? "Falha ao sincronizar fila de revisão."
+      : "Falha ao carregar fila de revisão.";
+
     try {
+      if (options?.syncFirst) {
+        try {
+          await syncPrCacheFromApi();
+        } catch {
+          // Still attempt to read the last known queue after a network failure on sync.
+        }
+      }
+
       const { ok, body } = await fetchReviewerQueueFromApi();
-
-      if (body.status === "stale") {
-        setResponse(body);
-        return body;
-      }
-
-      if (!ok && body.status === "error") {
-        const stale = staleFromLocalCache(body.message);
-        if (stale) {
-          setResponse(stale);
-          return stale;
-        }
-        setResponse(body);
-        return body;
-      }
-
-      if (!ok) {
-        const stale = staleFromLocalCache("Falha ao carregar fila de revisão.");
-        if (stale) {
-          setResponse(stale);
-          return stale;
-        }
-        const errorBody: ReviewerQueueApiResponse = {
-          status: "error",
-          message: "Falha ao carregar fila de revisão."
-        };
-        setResponse(errorBody);
-        return errorBody;
-      }
-
-      persistSuccessfulSync(body);
-      setResponse(body);
-      return body;
+      const next = resolveQueueResponse(ok, body, fallbackMessage);
+      setResponse(next);
+      return next;
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Erro de rede ao consultar fila de revisão.";
-      const stale = staleFromLocalCache(message);
-      if (stale) {
-        setResponse(stale);
-        return stale;
-      }
-      const body: ReviewerQueueApiResponse = { status: "error", message };
-      setResponse(body);
-      return body;
+      const message =
+        error instanceof Error ? error.message : "Erro de rede ao consultar fila de revisão.";
+      const next =
+        staleFromLocalCache(message) ?? ({ status: "error", message } satisfies ReviewerQueueApiResponse);
+      setResponse(next);
+      return next;
     } finally {
       setLoading(false);
       setIsFetching(false);
       inFlightRef.current = false;
     }
   }, []);
+
+  const load = useCallback(() => runLoad(), [runLoad]);
+  const refresh = useCallback(() => runLoad({ syncFirst: true }), [runLoad]);
 
   useEffect(() => {
     const cached = loadPrReviewerQueueLastSync();
@@ -128,6 +140,7 @@ export function usePrReviewerQueueSync() {
     response,
     loading,
     isFetching,
-    refresh: load
+    refresh,
+    load
   };
 }

@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { AppNotificationProvider } from "@/modules/notifications/components/app-notification-provider";
 import { QuickNoteDialog } from "@/components/quick-note/quick-note-dialog";
 import { WorkContextProvider } from "@/modules/work-context/components/work-context-provider";
+import { VacationCountdownBootstrap } from "@/modules/vacation-countdown/components/vacation-setup-dialog";
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { getGithubLogin } from "@/modules/app/lib/github-login-repository";
 
@@ -31,6 +32,7 @@ export default async function ShellLayout({ children }: Readonly<{ children: Rea
         {children}
       </SidebarInset>
       <QuickNoteDialog />
+      <VacationCountdownBootstrap />
       <AppNotificationProvider />
     </SidebarProvider>
     </WorkContextProvider>

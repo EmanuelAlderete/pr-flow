@@ -31,7 +31,7 @@ describe("validateCreateNoteInput", () => {
     });
   });
 
-  it("accepts valid notebook day and trimmed body", () => {
+  it("accepts valid notebook day and preserves surrounding whitespace", () => {
     const result = validateCreateNoteInput({
       notebookDay: "2026-05-28",
       body: "  ## Standup\n\n- shipped journal  "
@@ -40,7 +40,7 @@ describe("validateCreateNoteInput", () => {
       ok: true,
       value: {
         notebookDay: "2026-05-28",
-        body: "## Standup\n\n- shipped journal"
+        body: "  ## Standup\n\n- shipped journal  "
       }
     });
   });
@@ -51,6 +51,13 @@ describe("validateUpdateNoteInput", () => {
     expect(validateUpdateNoteInput({ body: "  " })).toEqual({
       ok: false,
       errors: { body: "Corpo da nota é obrigatório." }
+    });
+  });
+
+  it("preserves trailing whitespace on edit", () => {
+    expect(validateUpdateNoteInput({ body: "Hello " })).toEqual({
+      ok: true,
+      value: { body: "Hello " }
     });
   });
 });

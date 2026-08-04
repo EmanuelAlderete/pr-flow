@@ -7,7 +7,7 @@ export function buildSlackPrChannelText(channelLabel: string, issueKey: string):
 
 export function buildSlackPrThreadText(prUrls: string[]): string {
   const uniqueUrls = [...new Set(prUrls.map((url) => url.trim()).filter(Boolean))];
-  return uniqueUrls.map((url) => `- ${url}`).join("\n");
+  return uniqueUrls.join("\n");
 }
 
 export function resolveSlackPrShare(input: {

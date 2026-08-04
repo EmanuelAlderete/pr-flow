@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createPullRequest, fetchBranchDiff } from "@/modules/prs/lib/open-pr/gh-open-pr-client";
+import { createPullRequest, fetchBranchDiff, isBranchFullyMergedInto } from "@/modules/prs/lib/open-pr/gh-open-pr-client";
 
 describe("createPullRequest", () => {
   it("auto-atribui a PR ao usuario autenticado via @me", async () => {
@@ -55,5 +55,27 @@ describe("fetchBranchDiff", () => {
     await expect(
       fetchBranchDiff("acme/repo", "chore/JOR-251/x", "main", run)
     ).rejects.toThrow("gh: Not Found (HTTP 404)");
+  });
+});
+
+describe("isBranchFullyMergedInto", () => {
+  it("retorna true quando ahead_by e zero", async () => {
+    const run = vi.fn().mockResolvedValue({
+      stdout: JSON.stringify({ status: "behind", ahead_by: 0 }),
+      stderr: "",
+      exitCode: 0
+    });
+
+    await expect(isBranchFullyMergedInto("acme/repo", "release/1", "master", run)).resolves.toBe(true);
+  });
+
+  it("retorna false quando compare falha", async () => {
+    const run = vi.fn().mockResolvedValue({
+      stdout: "",
+      stderr: "404",
+      exitCode: 1
+    });
+
+    await expect(isBranchFullyMergedInto("acme/repo", "release/1", "master", run)).resolves.toBe(false);
   });
 });

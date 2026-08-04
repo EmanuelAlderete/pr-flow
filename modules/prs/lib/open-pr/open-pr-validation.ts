@@ -35,6 +35,10 @@ export const openPrBranchesQuerySchema = z.object({
   repository: repositorySchema
 });
 
+export const openPrBaseBranchesQuerySchema = z.object({
+  repository: repositorySchema
+});
+
 export const openPrGenerateBodySchema = z.object({
   repository: repositorySchema,
   branch: branchNameSchema,

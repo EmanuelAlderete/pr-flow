@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { format, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -22,6 +23,7 @@ import { NotebookDayPicker } from "@/modules/journal/components/notebook-day-pic
 import { NotePreview } from "@/modules/journal/lib/note-preview";
 import type { NoteDto } from "@/modules/journal/lib/domain";
 import {
+  isValidNotebookDay,
   notebookDayToDate,
   shiftNotebookDay,
   todayLocalDateString,
@@ -52,8 +54,18 @@ function dayHeadingLabel(notebookDay: string, today: string): string {
   return format(date, "EEEE, d 'de' MMMM", { locale: ptBR });
 }
 
+function initialNotebookDayFromSearch(dayParam: string | null): string {
+  if (dayParam && isValidNotebookDay(dayParam)) {
+    return dayParam;
+  }
+  return todayLocalDateString();
+}
+
 export function JournalPage() {
-  const [notebookDay, setNotebookDay] = useState(() => todayLocalDateString());
+  const searchParams = useSearchParams();
+  const [notebookDay, setNotebookDay] = useState(() =>
+    initialNotebookDayFromSearch(searchParams.get("day"))
+  );
   const [note, setNote] = useState<NoteDto | null>(null);
   const [body, setBody] = useState("");
   const [lastSavedBody, setLastSavedBody] = useState("");
@@ -110,7 +122,7 @@ export function JournalPage() {
       return;
     }
 
-    if (body.trim() === lastSavedBody.trim()) {
+    if (body === lastSavedBody) {
       return;
     }
 
@@ -121,8 +133,7 @@ export function JournalPage() {
     const content = body;
     const timer = window.setTimeout(() => {
       void (async () => {
-        const trimmed = content.trim();
-        if (trimmed.length === 0) {
+        if (content.trim().length === 0) {
           return;
         }
 
@@ -138,12 +149,12 @@ export function JournalPage() {
             ? await fetch(`/api/journal/notes/${currentNote.id}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ body: trimmed })
+              body: JSON.stringify({ body: content })
             })
             : await fetch("/api/journal/notes", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ notebookDay: currentNotebookDay, body: trimmed })
+              body: JSON.stringify({ notebookDay: currentNotebookDay, body: content })
             });
 
           if (generation !== saveGenerationRef.current) {
@@ -169,7 +180,7 @@ export function JournalPage() {
 
           const saved = (await response.json()) as NoteDto;
 
-          if (content.trim() !== bodyRef.current.trim()) {
+          if (content !== bodyRef.current) {
             if (!currentNote) {
               setNote(saved);
             }
@@ -208,7 +219,7 @@ export function JournalPage() {
   }
 
   const hasPendingSave =
-    !isLoading && body.trim().length > 0 && body.trim() !== lastSavedBody.trim();
+    !isLoading && body.trim().length > 0 && body !== lastSavedBody;
   const isSaveInProgress = hasPendingSave || isSaving;
   const showSavedIndicator = !isLoading && !isSaveInProgress && lastSavedBody.trim().length > 0;
   const showEditor = !isLoading && (note !== null || isEditorOpen);
