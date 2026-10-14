@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { isQuickNoteOpenShortcut } from "@/modules/journal/lib/quick-note";
+import { ptBR } from "@/modules/messages/pt-BR";
 import { dispatchTasksUpdated } from "@/modules/tasks/lib/task-events";
 
 type FieldErrors = Record<string, string>;
@@ -57,23 +58,23 @@ export function QuickNoteDialog() {
       }
 
       const payload = (await response.json()) as {
-        destination: "journal" | "task";
         routedBy: "ai" | "fallback";
+        tasks: unknown[];
       };
 
-      if (payload.destination === "task") {
-        toast.success("Salvo como tarefa.");
+      if (payload.tasks.length > 0) {
+        toast.success(ptBR.quickNote.savedWithTasks(payload.tasks.length));
         dispatchTasksUpdated();
       } else if (payload.routedBy === "fallback") {
-        toast.success("Salvo no caderno de hoje (IA indisponível).");
+        toast.success(ptBR.quickNote.savedJournalFallback);
       } else {
-        toast.success("Salvo no caderno de hoje.");
+        toast.success(ptBR.quickNote.savedJournal);
       }
 
       setText("");
       setIsOpen(false);
     } catch {
-      toast.error("Não foi possível salvar a quick note.");
+      toast.error(ptBR.quickNote.saveError);
     } finally {
       setIsSubmitting(false);
     }
@@ -103,18 +104,16 @@ export function QuickNoteDialog() {
     >
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Quick note</DialogTitle>
-          <DialogDescription>
-            A IA decide se vira tarefa ou nota no caderno de hoje. Ctrl+Enter para salvar.
-          </DialogDescription>
+          <DialogTitle>{ptBR.quickNote.title}</DialogTitle>
+          <DialogDescription>{ptBR.quickNote.description}</DialogDescription>
         </DialogHeader>
 
         <Textarea
           value={text}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={handleTextareaKeyDown}
-          placeholder="Digite sua nota rápida..."
-          aria-label="Texto da quick note"
+          placeholder={ptBR.quickNote.placeholder}
+          aria-label={ptBR.quickNote.textAriaLabel}
           aria-invalid={Boolean(fieldErrors.text)}
           rows={4}
           autoFocus

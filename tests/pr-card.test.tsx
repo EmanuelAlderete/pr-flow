@@ -386,4 +386,33 @@ describe("PrCard", () => {
     );
     expect(screen.getByText("0 reviewers solicitados")).toBeInTheDocument();
   });
+
+  it("mostra a revisão local sem tratar como aprovação", () => {
+    renderWithProviders(
+      <PrCard
+        pr={{
+          ...samplePr,
+          localReview: {
+            status: "ok",
+            headSha: "abc1234",
+            summary: "Um null esquecido no retry.",
+            findings: [
+              {
+                agent: "correctness",
+                path: "src/retry.ts",
+                line: 12,
+                message: "retry ignora null",
+                confidence: 0.91
+              }
+            ],
+            finishedAt: "2026-05-28T12:00:00.000Z",
+            error: null
+          }
+        }}
+      />
+    );
+
+    expect(screen.getByText("Revisão local · 1 achado")).toBeInTheDocument();
+    expect(screen.getByText(/A IA sugere/)).toBeInTheDocument();
+  });
 });

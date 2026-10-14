@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ExternalLink, Play, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Surface } from "@/components/ui/surface";
 import { cn } from "@/lib/utils";
 import type {
@@ -153,10 +153,15 @@ export function LocalDockerPage() {
                 {starting ? "Subindo…" : "Ligar Portainer"}
               </Button>
             ) : (
-              <Button type="button" render={<a href={portainerUrl} target="_blank" rel="noopener noreferrer" />}>
+              <a
+                href={portainerUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={buttonVariants()}
+              >
                 <ExternalLink className="size-4" aria-hidden />
                 Abrir Portainer
-              </Button>
+              </a>
             )}
           </div>
         </div>

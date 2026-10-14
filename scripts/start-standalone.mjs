@@ -26,11 +26,27 @@ cpSync(path.join(root, ".next", "static"), path.join(standaloneDir, ".next", "st
   force: true
 });
 
+function resolveDatabaseUrl() {
+  const current = process.env.DATABASE_URL?.trim() ?? "";
+  if (!current || current.startsWith("postgres://") || current.startsWith("postgresql://")) {
+    return `file:${path.join(root, "data", "pr-flow.sqlite")}`;
+  }
+  if (current.startsWith("file:")) {
+    const filePath = current.slice("file:".length);
+    const absolute = path.isAbsolute(filePath) ? filePath : path.resolve(root, filePath);
+    return `file:${absolute}`;
+  }
+  return current;
+}
+
 const port = process.env.PORT?.trim() || "3847";
 const env = {
   ...process.env,
   PORT: port,
-  HOSTNAME: process.env.HOSTNAME?.trim() || "0.0.0.0"
+  HOSTNAME: process.env.HOSTNAME?.trim() || "0.0.0.0",
+  PR_FLOW_ROOT: root,
+  PR_FLOW_MIGRATIONS_DIR: path.join(root, "drizzle"),
+  DATABASE_URL: resolveDatabaseUrl()
 };
 
 const child = spawn(process.execPath, [serverEntry], {

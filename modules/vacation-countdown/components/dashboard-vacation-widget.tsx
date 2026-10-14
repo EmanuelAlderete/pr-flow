@@ -55,7 +55,7 @@ export function DashboardVacationWidget() {
         {phase === "upcoming" ? (
           <div className="flex shrink-0 items-baseline gap-1">
             <span
-              className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-[var(--app-text)]"
+              className="text-2xl font-semibold tabular-nums leading-none tracking-tight text-[var(--brand-bright)]"
               aria-hidden
             >
               {daysRemaining}
@@ -65,7 +65,7 @@ export function DashboardVacationWidget() {
         ) : (
           <span className="shrink-0 text-sm font-medium text-[var(--app-accent)]">{label}</span>
         )}
-        <Button type="button" size="sm" variant="ghost" onClick={() => setEditOpen(true)}>
+        <Button type="button" size="sm" variant="outline" onClick={() => setEditOpen(true)}>
           {ptBR.vacation.edit}
         </Button>
       </div>

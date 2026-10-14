@@ -12,7 +12,7 @@ describe("POST /api/journal/quick-note", () => {
     submitQuickNote.mockReset();
   });
 
-  it("returns 200 with journal payload for valid body", async () => {
+  it("returns 200 with note and empty tasks for journal-only capture", async () => {
     const note = {
       id: "note-1",
       notebookDay: "2026-05-29",
@@ -22,9 +22,9 @@ describe("POST /api/journal/quick-note", () => {
     };
     submitQuickNote.mockResolvedValue({
       ok: true,
-      destination: "journal",
       routedBy: "ai",
-      note
+      note,
+      tasks: []
     });
 
     const response = await POST(
@@ -37,14 +37,21 @@ describe("POST /api/journal/quick-note", () => {
 
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
-      destination: "journal",
       routedBy: "ai",
-      note
+      note,
+      tasks: []
     });
     expect(submitQuickNote).toHaveBeenCalledWith({ text: "Ideia" });
   });
 
-  it("returns 201 with task payload when routed as task", async () => {
+  it("returns 201 with note and tasks when tasks were created", async () => {
+    const note = {
+      id: "note-1",
+      notebookDay: "2026-05-29",
+      body: "### quick-note:\nrevisar pr",
+      createdAt: "2026-05-29T12:00:00.000Z",
+      updatedAt: "2026-05-29T12:00:00.000Z"
+    };
     const task = {
       id: "task-1",
       title: "Revisar PR",
@@ -56,9 +63,9 @@ describe("POST /api/journal/quick-note", () => {
     };
     submitQuickNote.mockResolvedValue({
       ok: true,
-      destination: "task",
       routedBy: "ai",
-      task
+      note,
+      tasks: [task]
     });
 
     const response = await POST(
@@ -71,9 +78,9 @@ describe("POST /api/journal/quick-note", () => {
 
     expect(response.status).toBe(201);
     expect(await response.json()).toEqual({
-      destination: "task",
       routedBy: "ai",
-      task
+      note,
+      tasks: [task]
     });
   });
 

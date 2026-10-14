@@ -9,6 +9,10 @@ vi.mock("@/modules/prs/lib/pr-slack-share-repository", () => ({
   getPrSlackSharesByUrls: vi.fn()
 }));
 
+vi.mock("@/modules/prs/lib/local-review/local-review-repository", () => ({
+  getLatestLocalReviewsByPullRequest: vi.fn().mockResolvedValue(new Map())
+}));
+
 import { getPrSlackSharesByUrls } from "@/modules/prs/lib/pr-slack-share-repository";
 
 const samplePr: MonitoredPr = {

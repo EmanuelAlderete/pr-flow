@@ -49,6 +49,7 @@ Use estes antes de criar equivalentes custom:
 | `Popover` + `Calendar` | `popover.tsx`, `calendar.tsx` | Seletor de dia (Journal) |
 | `DatePicker` | `components/ui/date-picker.tsx` | Data com locale pt-BR (Tasks) |
 | `Tooltip` | `components/ui/tooltip.tsx` | Ícones no card de PR, ações compactas |
+| `HelpHint` | `components/ui/help-hint.tsx` | Texto explicativo sob título → ícone `CircleHelp` + tooltip (hover/foco); empty/status ficam visíveis |
 | `Skeleton` | `components/ui/skeleton.tsx` | Loading de listas |
 | `Sidebar` | `components/ui/sidebar.tsx` | Shell (`app-sidebar`) |
 | `Sheet` | `components/ui/sheet.tsx` | Painéis laterais (se necessário) |
@@ -69,7 +70,7 @@ import { PageHeader } from "@/components/layout/page-header";
 export function MinhaPage() {
   return (
     <div className="app-shell">
-      <PageHeader title="Título" description="Descrição em pt-BR." />
+      <PageHeader title="Título" description="Explicação breve — vira HelpHint ao lado do título." />
       <Surface className="p-4">
         <form className="flex gap-2">
           <Input placeholder="Exemplo" aria-label="Campo exemplo" />

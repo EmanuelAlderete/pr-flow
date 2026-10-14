@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { BookOpen, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Surface } from "@/components/ui/surface";
 import { cn } from "@/lib/utils";
 import { useJournalStreak } from "@/modules/journal/hooks/use-journal-streak";
@@ -25,6 +25,10 @@ export function DashboardJournalStreakWidget() {
   const streak = data?.currentStreak ?? 0;
   const todayPending = data?.todayPending ?? false;
   const ctaHref = data ? `/journal?day=${encodeURIComponent(data.today)}` : "/journal";
+  const ctaLabel = todayPending ? ptBR.journalStreak.openToday : ptBR.journalStreak.openJournal;
+  const ctaAriaLabel = todayPending
+    ? ptBR.journalStreak.openTodayAriaLabel
+    : ptBR.journalStreak.openJournalAriaLabel;
 
   return (
     <Surface className="flex min-w-0 flex-col gap-2 p-3" data-testid="dashboard-journal-streak-widget">
@@ -64,38 +68,41 @@ export function DashboardJournalStreakWidget() {
             {ptBR.journalStreak.retry}
           </Button>
         ) : null}
+        {!isLoading && !error && data ? (
+          <Link
+            href={ctaHref}
+            aria-label={ctaAriaLabel}
+            className={buttonVariants({ variant: "outline", size: "sm" })}
+          >
+            {ctaLabel}
+          </Link>
+        ) : null}
       </div>
 
       {!isLoading && !error && data?.strip ? (
-        <>
-          <ol
-            className="flex items-end gap-1"
-            aria-label={ptBR.journalStreak.stripAriaLabel}
-            data-testid="journal-streak-strip"
-          >
-            {data.strip.map((day) => (
-              <li key={day.notebookDay} className="min-w-0 flex-1">
-                <span
-                  title={dayStatusLabel(day.notebookDay, day.status)}
-                  aria-label={dayStatusLabel(day.notebookDay, day.status)}
-                  data-status={day.status}
-                  data-notebook-day={day.notebookDay}
-                  className={cn(
-                    "block h-2 w-full rounded-sm",
-                    day.status === "filled" && "bg-[var(--brand-bright)]",
-                    day.status === "pending" &&
-                      "border border-dashed border-[var(--brand-bright)] bg-[var(--brand-dim)]",
-                    day.status === "empty" && "bg-[var(--app-surface-inset)]"
-                  )}
-                />
-              </li>
-            ))}
-          </ol>
-
-          <Button size="sm" variant="outline" className="self-start" render={<Link href={ctaHref} />}>
-            {todayPending ? ptBR.journalStreak.openToday : ptBR.journalStreak.openJournal}
-          </Button>
-        </>
+        <ol
+          className="flex items-end gap-1"
+          aria-label={ptBR.journalStreak.stripAriaLabel}
+          data-testid="journal-streak-strip"
+        >
+          {data.strip.map((day) => (
+            <li key={day.notebookDay} className="min-w-0 flex-1">
+              <span
+                title={dayStatusLabel(day.notebookDay, day.status)}
+                aria-label={dayStatusLabel(day.notebookDay, day.status)}
+                data-status={day.status}
+                data-notebook-day={day.notebookDay}
+                className={cn(
+                  "block h-2 w-full rounded-sm",
+                  day.status === "filled" && "bg-[var(--brand-bright)]",
+                  day.status === "pending" &&
+                    "border border-dashed border-[var(--brand-bright)] bg-[var(--brand-dim)]",
+                  day.status === "empty" && "bg-[var(--app-surface-inset)]"
+                )}
+              />
+            </li>
+          ))}
+        </ol>
       ) : null}
     </Surface>
   );

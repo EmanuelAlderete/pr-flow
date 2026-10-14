@@ -11,6 +11,10 @@ vi.mock("@/modules/prs/lib/pr-slack-share-repository", () => ({
   getPrSlackSharesByUrls: vi.fn().mockResolvedValue(new Map())
 }));
 
+vi.mock("@/modules/prs/lib/local-review/local-review-repository", () => ({
+  getLatestLocalReviewsByPullRequest: vi.fn().mockResolvedValue(new Map())
+}));
+
 import {
   getPrSyncMeta,
   loadPrMonitorCache,

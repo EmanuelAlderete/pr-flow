@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import { Clock, Play, ScrollText } from "lucide-react";
+import { Clock, Play } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +24,7 @@ import {
   type CronJobDefinition,
   type CronJobId
 } from "@/modules/devtools/lib/cron-job-definitions";
-import { grafanaLokiExploreUrl } from "@/modules/observability/lib/grafana-links";
+
 type CronRunResponse = {
   jobId: string;
   status: "ok" | "skipped" | "error";
@@ -113,15 +113,6 @@ export function CronsPage() {
                     {job.schedule}
                   </p>
                   <p className="text-sm text-[var(--app-text-muted)]">{job.description}</p>
-                  <a
-                    href={grafanaLokiExploreUrl(job.id)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-[var(--brand-bright)] hover:underline"
-                  >
-                    <ScrollText className="size-3.5" aria-hidden />
-                    Ver logs no Grafana
-                  </a>
                 </div>
                 <Button
                   type="button"

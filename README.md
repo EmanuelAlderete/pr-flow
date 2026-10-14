@@ -4,7 +4,7 @@ Hub local do dia de trabalho: monitora PRs no GitHub, organiza tarefas e journal
 
 Pensado para quem joga vários repositórios, revisores e tickets ao mesmo tempo e quer um painel próprio, sem depender de dashboards genéricos.
 
-**App:** [http://localhost:3847](http://localhost:3847) · **Grafana:** [http://localhost:3848](http://localhost:3848) (`admin` / `prflow`)
+**App:** [http://localhost:3847](http://localhost:3847)
 
 ---
 
@@ -36,11 +36,12 @@ Pensado para quem joga vários repositórios, revisores e tickets ao mesmo tempo
 - Universo de reviewers = `requested_reviewers`; “avaliou” = qualquer review (`COMMENTED`, `APPROVED`, `CHANGES_REQUESTED`); último review da pessoa vence
 - PR sem reviewers continua visível, com indicador explícito
 - Sync por cron + refresh manual; compartilhamento no Slack
+- **Revisão local:** a cada 15 minutos, uma PR com commit novo é revisada no clone local pelo Claude Code (Haiku e subagentes). O resultado aparece no card. A IA não aprova nem rejeita no GitHub
 - **Abrir PR:** descobre branches suas, sugere base, monta título/corpo (IA opcional) e cria via `gh`
 - **Fila de reviews:** PRs em que você é revisor, em lista simples
 
 ### Jira (`/jira`)
-- Cache Postgres atualizado a cada ~10 min
+- Cache local atualizado a cada ~10 min
 - Detalhe do ticket, linkify de chaves `JOR-xxx` em markdown
 - **Criar branch com IA:** escolher repos monitorados → slug sugerido (`feat/` / `fix/`) → criar refs remotas no GitHub
 
@@ -54,15 +55,41 @@ Pensado para quem joga vários repositórios, revisores e tickets ao mesmo tempo
 - Catch-up no boot: se o app estava offline à meia-noite, gera até 14 dias pendentes
 - Tom ajustável por nível de carreira (`SUMMARY_CAREER_LEVEL`)
 
-### Devtools & observabilidade
+### Devtools
 - **Crons** — disparo on-demand com confirmação
 - **Repositórios** — cadastro em UI (`monitored_repositories`); na 1ª execução importa `MONITORED_REPOSITORIES` do `.env` se o banco estiver vazio
 - **Ambiente local** — Portainer do stack Jusfy (`LOCAL_DOCKER_ROOT` + `JUSFY_ROOT`)
-- Stack Docker com Loki, Prometheus e Grafana (dashboard **PR Flow**)
 
 ---
 
-## Startup rápido (Docker)
+## Startup rápido (npm)
+
+Pré-requisitos: **Node.js 22**, **GitHub CLI** (`gh`). O banco usa o SQLite embutido do Node (`NODE_OPTIONS=--experimental-sqlite`, já ligado nos scripts npm). A revisão local também precisa do **Claude Code** no PATH, autenticado pela assinatura (`claude` ou `claude setup-token`). Não defina `ANTHROPIC_API_KEY` nesse processo.
+
+```bash
+npm install
+cp .env.example .env
+# edite GH_TOKEN, MONITORED_REPOSITORIES e o restante
+npm run db:migrate
+npm run dev                  # http://localhost:3847
+```
+
+Se você já tem dados no Postgres deste app:
+
+```bash
+# o Postgres antigo precisa responder em localhost:5432
+npm run db:import-postgres      # copia para data/pr-flow.sqlite e ajusta o .env
+```
+
+Produção local: `npm run build` e depois `npm run start`. Não use `next start` direto.
+
+GitHub no host: `GH_TOKEN` no `.env` **ou** `gh auth login`.
+
+---
+
+## Docker (opcional)
+
+O Compose sobe só o app, com o SQLite em `./data`. A revisão local fica desligada no container (`DISABLE_PR_LOCAL_REVIEW_CRON=1`), porque o Claude Code está no host.
 
 Pré-requisitos: **Docker** + **Docker Compose**. Token GitHub: veja [Como obter o GH_TOKEN](#como-obter-o-gh_token).
 
@@ -96,14 +123,13 @@ docker compose up --build
 docker compose up -d --build
 ```
 
-Na primeira execução: build da imagem, migrations e start do app.
+Na primeira execução: build da imagem, migrations do SQLite em `./data` e start do app.
 
 ### 3. Abrir
 
 | Serviço | URL |
 |---------|-----|
 | **PR Flow** | [http://localhost:3847](http://localhost:3847) |
-| **Grafana** | [http://localhost:3848](http://localhost:3848) — `admin` / `prflow` |
 
 Porta **3847** de propósito (evita briga com outros serviços na 3000).
 
@@ -112,29 +138,16 @@ Porta **3847** de propósito (evita briga com outros serviços na 3000).
 ```bash
 docker compose logs -f app   # logs do app
 docker compose down          # parar
-docker compose down -v       # parar e apagar Postgres
+docker compose down          # o arquivo SQLite em ./data permanece
 ```
 
 ---
 
-## Desenvolvimento local (hot-reload)
+## Desenvolvimento local
 
-Útil quando você quer Next.js no host e só o Postgres no Compose.
+O caminho padrão é o [startup com npm](#startup-rápido-npm). `npm run dev` aplica as migrations do SQLite na primeira conexão.
 
-```bash
-docker compose up -d postgres
-
-# no .env, use host localhost:
-# DATABASE_URL=postgresql://prflow:prflow@localhost:5432/prflow
-
-npm install
-npm run db:migrate
-npm run dev                  # http://localhost:3847
-```
-
-GitHub no host: `GH_TOKEN` no `.env` **ou** `gh auth login`.
-
-Produção local: `npm run build` e depois `npm run start` (standalone). Não use `next start` direto — rotas como `/api/prs/slack-share` quebram.
+`npm run start` (standalone) também aponta o banco para `data/pr-flow.sqlite` na raiz do projeto. Não use `next start` direto — rotas como `/api/prs/slack-share` quebram.
 
 ---
 
@@ -149,8 +162,8 @@ Produção local: `npm run build` e depois `npm run start` (standalone). Não us
 | `npm run test:watch` | Testes em watch |
 | `npm run build` | Build de produção |
 | `npm run start` | Produção local (standalone; requer build) |
-| `npm run db:migrate` | Migrations (drizzle-kit, host) |
-| `npm run db:migrate:docker` | Migrations (mesmo script do container) |
+| `npm run db:migrate` | Aplica migrations no SQLite |
+| `npm run db:import-postgres` | Copia os dados do Postgres antigo para o SQLite |
 | `npm run db:generate` | Gerar migration a partir do schema |
 
 ---
@@ -177,11 +190,11 @@ Código organizado por domínio em `modules/`. Rotas App Router em `app/(shell)/
 | `cron-scheduling` | Specs e `startAllCrons()` no boot |
 | `devtools` | Runners de cron on-demand, repositórios |
 | `local-docker` | Portainer / stack Jusfy local |
-| `observability` | System logs, métricas Prometheus |
+| `observability` | System logs (stdout) |
 | `slack` | Integração de envio ao canal |
 | `work-context` | Diálogo de contexto de trabalho |
 | `messages` | Copy pt-BR centralizado |
-| `db` | Drizzle / PostgreSQL |
+| `db` | Drizzle / SQLite |
 | `notifications` | Toasts / feedback de UI |
 
 ### Rotas principais
@@ -198,7 +211,6 @@ Código organizado por domínio em `modules/`. Rotas App Router em `app/(shell)/
 | `/summaries` | Histórico de resumos |
 | `/devtools/crons` | Disparo manual de crons |
 | `/devtools/local-docker` | Ambiente local Jusfy |
-| `/api/metrics` | Métricas Prometheus |
 
 `/` redireciona para `/dashboard`.
 
@@ -206,7 +218,8 @@ Código organizado por domínio em `modules/`. Rotas App Router em `app/(shell)/
 
 | Job | Frequência | Desligar com |
 |-----|------------|--------------|
-| Sync de PRs | periódico | `DISABLE_PR_SYNC_CRON=1` |
+| Sync de PRs | a cada 10 min | `DISABLE_PR_SYNC_CRON=1` |
+| Revisão local de PRs | a cada 15 min, uma PR por vez | `DISABLE_PR_LOCAL_REVIEW_CRON=1` |
 | Sync Jira | a cada 10 min | `DISABLE_JIRA_SYNC_CRON=1` |
 | Briefing do dashboard | horária | `DISABLE_DASHBOARD_BRIEFING_CRON=1` |
 | Resumos diário/semanal | meia-noite | `DISABLE_SUMMARY_CRON=1` |
@@ -221,7 +234,9 @@ Fuso padrão: `America/Sao_Paulo` (`SUMMARY_CRON_TZ`).
 |----------|-------------|-----------|
 | `GH_TOKEN` | Sim (PRs) | Token GitHub — ver [abaixo](#como-obter-o-gh-token) |
 | `MONITORED_REPOSITORIES` | Sim (PRs) | `owner/repo` separados por vírgula (seed inicial) |
-| `DATABASE_URL` | Sim | PostgreSQL |
+| `DATABASE_URL` | Sim | SQLite. Padrão `file:./data/pr-flow.sqlite` |
+| `CLAUDE_CODE_OAUTH_TOKEN` | Não | Token da assinatura do Claude Code (`claude setup-token`). Sem isso, vale o login já feito no host |
+| `PR_REVIEW_MODEL` | Não | Modelo da revisão local. Padrão `haiku` |
 | `GEMINI_API_KEY` | Sim (IA) | [Google AI Studio](https://aistudio.google.com/apikey) |
 | `GEMINI_MODEL` | Não | Padrão `gemini-2.5-flash` |
 | `GEMINI_MODEL_FALLBACK` | Não | Modelos reserva (vírgula) se 503 |
@@ -275,15 +290,12 @@ Trate o token como senha: não commite o `.env`.
 
 ```
 docker compose
-├── postgres     — PostgreSQL 16 (volume persistente)
-├── app          — Next.js + gh CLI + migrations no startup
-├── prometheus   — métricas (:9090)
-├── loki         — logs (:3100)
-├── promtail     — coleta stdout do app
-└── grafana      — dashboards (:3848)
+└── app          — Next.js + gh CLI + SQLite em ./data
 ```
 
-System logs em JSON Lines no Docker (`LOG_FORMAT=json`). Em `npm run dev`, o padrão é legível (`LOG_FORMAT=pretty` opcional). Em **Devtools → Crons**, cada job tem link **Ver logs no Grafana**.
+A revisão local não roda nesse container. Ela usa o Claude Code do host, via `npm run dev` ou `npm run start`.
+
+System logs em JSON Lines no Docker (`LOG_FORMAT=json`). Em `npm run dev`, o padrão é legível (`LOG_FORMAT=pretty` opcional). Ver com `docker compose logs -f app`.
 
 ---
 

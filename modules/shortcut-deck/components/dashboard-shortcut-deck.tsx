@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { LayoutGrid, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HelpHint } from "@/components/ui/help-hint";
 import { Surface } from "@/components/ui/surface";
 import { ShortcutDeckManageDialog } from "@/modules/shortcut-deck/components/shortcut-deck-manage-dialog";
 import { ShortcutTile } from "@/modules/shortcut-deck/components/shortcut-tile";
@@ -15,20 +16,16 @@ export function DashboardShortcutDeck() {
 
   return (
     <Surface className="flex h-full min-w-0 flex-col space-y-4 p-4" data-testid="dashboard-shortcut-deck">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--brand-border)] bg-[var(--brand-dim)] text-[var(--brand-bright)]">
             <LayoutGrid className="size-4" aria-hidden />
           </span>
-          <div className="min-w-0 space-y-1">
+          <div className="flex min-w-0 items-center gap-2">
             <h2 className="text-sm font-semibold text-[var(--app-text)]">
               {ptBR.shortcutDeck.widgetTitle}
             </h2>
-            <p className="text-xs text-[var(--app-text-muted)]">
-              {shortcuts.length === 0
-                ? ptBR.shortcutDeck.widgetEmpty
-                : ptBR.shortcutDeck.widgetHint}
-            </p>
+            <HelpHint>{ptBR.shortcutDeck.widgetHelp}</HelpHint>
           </div>
         </div>
         <Button
@@ -43,7 +40,9 @@ export function DashboardShortcutDeck() {
         </Button>
       </div>
 
-      {shortcuts.length > 0 ? (
+      {shortcuts.length === 0 ? (
+        <p className="text-sm text-[var(--app-text-muted)]">{ptBR.shortcutDeck.widgetEmpty}</p>
+      ) : (
         <div
           className="grid grid-cols-3 gap-2 sm:grid-cols-4"
           role="list"
@@ -55,7 +54,7 @@ export function DashboardShortcutDeck() {
             </div>
           ))}
         </div>
-      ) : null}
+      )}
 
       <ShortcutDeckManageDialog open={manageOpen} onOpenChange={setManageOpen} />
     </Surface>

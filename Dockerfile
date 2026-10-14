@@ -20,13 +20,14 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3847
 ENV HOSTNAME=0.0.0.0
+ENV NODE_OPTIONS=--experimental-sqlite
 
 # Instalando pacotes necessários
 RUN apk add --no-cache \
   ca-certificates \
   curl \
-  postgresql-client \
   github-cli \
+  git \
   bash
 
 # Criando usuário de sistema no Alpine
@@ -37,9 +38,7 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/scripts/migrate.mjs ./scripts/migrate.mjs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-# migrate.mjs runs outside the Next bundle and needs these at runtime
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/drizzle-orm ./node_modules/drizzle-orm
-COPY --from=deps --chown=nextjs:nodejs /app/node_modules/postgres ./node_modules/postgres
+COPY --from=builder --chown=nextjs:nodejs /app/.claude ./.claude
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { HelpHint } from "@/components/ui/help-hint";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
@@ -16,11 +17,9 @@ export function PageHeader({ title, description, actions, className }: PageHeade
         className
       )}
     >
-      <div className="space-y-1">
+      <div className="flex min-w-0 items-center gap-2">
         <h1 className="text-2xl font-semibold tracking-tight text-[var(--app-text)]">{title}</h1>
-        {description ? (
-          <p className="max-w-2xl text-sm leading-relaxed text-[var(--app-text-muted)]">{description}</p>
-        ) : null}
+        {description ? <HelpHint side="bottom">{description}</HelpHint> : null}
       </div>
       {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </header>

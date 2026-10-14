@@ -19,28 +19,24 @@ const hubLinks = [
   {
     href: "/prs",
     title: "Pull Requests",
-    description: "Reviewers e status das PRs abertas",
     icon: GitPullRequest,
     statId: "prs"
   },
   {
     href: "/tasks",
     title: "Tarefas",
-    description: "Lista pessoal de trabalho",
     icon: CheckSquare,
     statId: "tasks"
   },
   {
     href: "/jira",
     title: "Jira",
-    description: "Tickets atribuídos a você na sprint atual",
     icon: Ticket,
     statId: "jira"
   },
   {
     href: "/summaries",
     title: "Resumos",
-    description: "Histórico diário e semanal com IA",
     icon: FileText,
     statId: "summaries"
   }
@@ -171,14 +167,11 @@ function HubCardHeader({ item }: { item: (typeof hubLinks)[number] }) {
           <Icon className="size-4" aria-hidden />
         </span>
         <ArrowRight
-          className="size-4 shrink-0 text-[var(--app-text-muted)] opacity-0 transition-opacity group-hover:opacity-100"
+          className="size-4 shrink-0 text-[var(--app-text-muted)] transition-colors group-hover:text-[var(--app-text)]"
           aria-hidden
         />
       </div>
-      <div className="space-y-1">
-        <h3 className="text-sm font-semibold text-[var(--app-text)]">{item.title}</h3>
-        <p className="text-xs leading-relaxed text-[var(--app-text-muted)]">{item.description}</p>
-      </div>
+      <h3 className="text-sm font-semibold text-[var(--app-text)]">{item.title}</h3>
     </>
   );
 }
@@ -234,7 +227,7 @@ function HubCardStat({
       data-testid={`hub-stat-${item.statId}`}
     >
       <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-semibold tabular-nums leading-none tracking-tight text-[var(--app-text)] sm:text-4xl">
+        <span className="text-3xl font-semibold tabular-nums leading-none tracking-tight text-[var(--brand-bright)] sm:text-4xl">
           {stat.value}
         </span>
         <span className="pb-0.5 text-sm font-medium text-[var(--app-accent)]">{stat.unit}</span>

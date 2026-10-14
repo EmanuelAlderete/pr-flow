@@ -1,9 +1,5 @@
-import { and, eq, gte, isNotNull, isNull, lt, or, sql } from "drizzle-orm";
-import {
-  normalizeJiraIssueKey,
-  postgresWordBoundaryPattern,
-  textMentionsIssueKey
-} from "@/modules/jira-issue-key";
+import { and, eq, gte, isNotNull, isNull, lt } from "drizzle-orm";
+import { normalizeJiraIssueKey, textMentionsIssueKey } from "@/modules/jira-issue-key";
 import { notebookDayToDate, todayLocalDateString } from "@/modules/journal/lib/notebook-day";
 import type { OpenTaskDto, TaskDto, TaskListResponse, TaskRecord } from "@/modules/tasks/lib/domain";
 import { getDb } from "@/modules/db/lib/db";
@@ -54,26 +50,10 @@ export async function listAllActiveTasks(): Promise<TaskRecord[]> {
 
 export async function listActiveTasksMentioningIssueKey(issueKey: string): Promise<TaskRecord[]> {
   const normalized = normalizeJiraIssueKey(issueKey);
-  const pattern = postgresWordBoundaryPattern(normalized);
-  const db = getDb();
-  const rows = await db
-    .select()
-    .from(tasks)
-    .where(
-      and(
-        isNull(tasks.deletedAt),
-        or(
-          sql`${tasks.title} ~* ${pattern}`,
-          sql`coalesce(${tasks.description}, '') ~* ${pattern}`
-        )
-      )
-    );
-
-  return rows
-    .map(toTaskRecord)
-    .filter((record) =>
-      textMentionsIssueKey(`${record.title}\n${record.description ?? ""}`, normalized)
-    );
+  const active = await listAllActiveTasks();
+  return active.filter((record) =>
+    textMentionsIssueKey(`${record.title}\n${record.description ?? ""}`, normalized)
+  );
 }
 
 export async function listTaskLists(completedOnDay?: string): Promise<TaskListResponse> {

@@ -93,11 +93,12 @@ Módulo **`modules/cron-scheduling/`**: specs (`CRON_JOB_SCHEDULE_SPECS`), `star
 | Briefing do dashboard | `dashboard-briefing-*`, `cron:dashboard-briefing` |
 | Notebook day | `modules/notebook-day/` |
 | Tarefa / nota (journal) | `modules/tasks/`, `modules/journal/` |
+| Quick note (captura rápida) | `modules/journal/lib/quick-note*.ts`, Ctrl+Space |
 | Streak do journal | `modules/journal/lib/journal-streak.ts`, widget no dashboard |
 
 ## System log
 
-Evento estruturado emitido pela aplicação (crons, sync, boot) via instrumentação interna. Destino: stdout coletado pela stack de observabilidade — não é feature de UI nem dado de produto no Postgres.
+Evento estruturado emitido pela aplicação (crons, sync, boot) via instrumentação interna. Destino: stdout (`docker compose logs -f app` no Compose). Não é feature de UI nem dado de produto no Postgres.
 _Avoid_: log do Devtools, persistência de logs no Postgres
 
 Campo **`source`** em duas camadas:
@@ -109,15 +110,10 @@ Campo **`source`** em duas camadas:
 
 Serviços logam detalhes internos sem saber o gatilho (manual, cron ou API). Orquestradores logam início/fim do fluxo que dispararam.
 
-## Observabilidade
-
-Capacidade de inspecionar saúde e comportamento do PR Flow fora da aplicação: logs, métricas e dashboards em ferramentas dedicadas (ex.: Grafana), via Docker Compose local (`docker compose up`). `npm run dev` fora do Compose não alimenta Loki.
-_Avoid_: página de logs no app, histórico de logs no banco de produto
-
 ## Gh command log
 
-Registro em arquivo dos comandos `gh` executados pelo monitor de PRs (`GhLogger`). Independente de system logs e da stack de observabilidade.
-_Avoid_: system log, log do Loki
+Registro em arquivo dos comandos `gh` executados pelo monitor de PRs (`GhLogger`). Independente de system logs.
+_Avoid_: system log
 
 ## Ambiente local (Jusfy Docker)
 
@@ -133,6 +129,16 @@ _Avoid_: persistir no Postgres; confundir com feriados ou calendário do Jira
 
 Widget do dashboard com os compromissos de hoje, via feed **iCal secreto** do Google Calendar (`GOOGLE_CALENDAR_ICAL_URL`). Módulo **`modules/day-calendar/`**; leitura sob demanda em `GET /api/dashboard/calendar-today` (cache em memória ~5 min). Fuso alinhado a `SUMMARY_CRON_TZ` (padrão `America/Sao_Paulo`).
 _Avoid_: OAuth Google; confiar URL fora de `calendar.google.com`; commitar a URL privada
+
+## Quick note (captura rápida)
+
+Entrada curta via atalho (Ctrl+Space) que **sempre** vira registro na nota do notebook day de hoje e pode extrair **uma ou mais tarefas** relacionadas quando o texto contém ações concretas — inclusive **tarefas implícitas** embutidas em narrativa/log (“amanhã ainda preciso falar…”) no meio ou no fim do parágrafo. Não é escolha exclusiva entre caderno e tarefa.
+_Avoid_: quick chat; destination XOR journal/task; “só tarefa” sem registro no caderno; ignorar compromisso futuro porque o resto do texto é contexto
+
+## Prazo da tarefa (due date)
+
+Data-calendário `YYYY-MM-DD` opcional da tarefa. Frases relativas (“hoje”, “amanhã”, “até o final dessa semana”) resolvem a partir do notebook day corrente: **final dessa semana** = sexta do período útil (seg–sex) que contém o dia.
+_Avoid_: datetime com hora; inventar data absoluta sem âncora do dia corrente
 
 ## Deck de atalhos
 

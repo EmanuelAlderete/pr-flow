@@ -5,6 +5,9 @@ node_modules/
 .next/
 out/
 
+# Local database and PR review checkouts
+data/
+
 # Environment (keep .env.example tracked)
 .env
 .env.*

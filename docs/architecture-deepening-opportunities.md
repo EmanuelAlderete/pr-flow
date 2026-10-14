@@ -80,7 +80,7 @@ application/
     ├── jira-issue-key/         # Chave JOR-xxx, URLs, fontes para sync Jira
     ├── jira/                   # Sync, cache, UI
     ├── journal/                # Notas por notebook day
-    ├── observability/          # system logs (stdout) + métricas Prometheus
+    ├── observability/          # system logs (stdout)
     ├── notifications/          # Alertas browser
     ├── prs/                    # Maior módulo: GH, cache, timeline, UI
     ├── resumos/                # Resumos persistidos + schedulers

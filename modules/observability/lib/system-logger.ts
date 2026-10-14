@@ -32,11 +32,6 @@ function resolveLogFormat(): "json" | "pretty" {
     return "json";
   }
 
-  const databaseUrl = process.env.DATABASE_URL ?? "";
-  if (databaseUrl.includes("@postgres:")) {
-    return "json";
-  }
-
   return "pretty";
 }
 
@@ -87,7 +82,7 @@ function truncateEvent(event: SystemLogEvent): SystemLogEvent {
 
   return {
     ...next,
-    details: "[truncated — payload too large for observability pipeline]"
+    details: "[truncated — payload too large]"
   };
 }
 

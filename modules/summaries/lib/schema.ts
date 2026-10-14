@@ -1,18 +1,22 @@
-import { pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
-export const summaryTypeEnum = pgEnum("summary_type", ["daily", "weekly", "dashboard"]);
+export const summaryTypes = ["daily", "weekly", "dashboard"] as const;
+export type SummaryType = (typeof summaryTypes)[number];
 
-export const summaries = pgTable(
+export const summaries = sqliteTable(
   "summaries",
   {
-    id: uuid("id").primaryKey().defaultRandom(),
-    type: summaryTypeEnum("type").notNull(),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    type: text("type").$type<SummaryType>().notNull(),
     periodKey: text("period_key").notNull(),
     content: text("content").notNull(),
-    generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow()
+    generatedAt: integer("generated_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date())
   },
   (table) => [uniqueIndex("summaries_type_period_key_unique").on(table.type, table.periodKey)]
 );
 
 export type SummaryRow = typeof summaries.$inferSelect;
-export type SummaryType = SummaryRow["type"];

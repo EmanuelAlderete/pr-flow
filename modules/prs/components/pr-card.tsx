@@ -8,7 +8,53 @@ import { PrCardSlackSharedBadge } from "@/modules/prs/components/pr-card-slack-s
 import { PrOpenDuration } from "@/modules/prs/components/pr-open-duration";
 import { ReviewerListItem } from "@/modules/prs/components/reviewer-list-item";
 import { usePrCardViewModel } from "@/modules/prs/lib/hooks/use-pr-card-view-model";
+import { ptBR } from "@/modules/messages";
 import { useWorkContext } from "@/modules/work-context/components/work-context-provider";
+
+function LocalReviewBlock({ review }: { review: MonitoredPr["localReview"] }) {
+  if (!review) {
+    return null;
+  }
+
+  if (review.status === "running") {
+    return <p className="small muted pr-local-review">{ptBR.localReview.running}</p>;
+  }
+
+  if (review.status === "error") {
+    return (
+      <p className="small muted pr-local-review">
+        {ptBR.localReview.failed}
+        {review.error ? ` — ${review.error}` : ""}
+      </p>
+    );
+  }
+
+  const findings = review.findings.slice(0, 8);
+
+  return (
+    <div className="pr-local-review">
+      <details>
+        <summary>{ptBR.localReview.summary(review.findings.length)}</summary>
+        {review.summary ? <p className="small">{review.summary}</p> : null}
+        {findings.length > 0 ? (
+          <ul className="pr-local-review-findings">
+            {findings.map((finding) => (
+              <li key={`${finding.path}:${finding.line ?? 0}:${finding.message}`}>
+                <span className="small">
+                  {finding.path}
+                  {finding.line ? `:${finding.line}` : ""} — {finding.message}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="small muted">{ptBR.localReview.clean}</p>
+        )}
+      </details>
+      <p className="small muted">{ptBR.localReview.human}</p>
+    </div>
+  );
+}
 
 interface Props {
   pr: MonitoredPr;
@@ -140,6 +186,8 @@ export function PrCard({ pr, allOpenPrs = [], slackConfigured = false }: Props) 
           <p className="small muted">0 reviewers solicitados</p>
         </div>
       )}
+
+      <LocalReviewBlock review={pr.localReview} />
     </PrCardContextMenu>
   );
 }

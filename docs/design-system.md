@@ -44,7 +44,11 @@ Alternativas consideradas (se mudar marca no futuro): âmbar (próximo demais do
 
 - **Fonte:** Geist via `next/font` → `--font-sans` (`app/layout.tsx`).
 - **Não** reintroduzir Inter/Arial no `body`.
-- Títulos de página: `PageHeader` (`text-2xl font-semibold`).
+- Títulos de página: `PageHeader` (`text-2xl font-semibold`) — descrição opcional via `HelpHint` (ícone + tooltip), não parágrafo sob o título.
+- Texto explicativo de widget/seção: `HelpHint`; empty states, contagens e erros permanecem visíveis.
+- Widgets compactos do dashboard (férias, streak): `p-3`, badge `size-8`, métrica em `--brand-bright`, ação sempre visível na linha do título (`Button` `outline` `sm`) — sem CTA extra abaixo e sem revelar só no hover.
+- Widgets em painel (calendário, deck, briefing, tarefas): um `Surface` com `p-4`, badge `size-9`, título `text-sm font-semibold` + `HelpHint`, ação de header em `outline` `sm`.
+- Hub: título + métrica, sem parágrafo descritivo; seta de navegação sempre visível (só muda cor no hover).
 - Seções em cards PR: sentence case (`Quem já revisou`), **sem** ALL CAPS agressivo.
 
 ## Componentes
@@ -116,4 +120,4 @@ Não reutilizar para marca global:
 
 ---
 
-*Última revisão: 2026-07-29 — cards minimalistas (filamento de status, panel quieto).*
+*Última revisão: 2026-10-14 — acento ember restaurado.*

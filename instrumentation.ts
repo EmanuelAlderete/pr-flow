@@ -3,11 +3,9 @@ export async function register() {
     const { initializeApp } = await import("@/lib/init");
     initializeApp();
 
-    const { recordAppBoot } = await import("@/modules/observability/lib/metrics");
     const { writeSystemLogFireAndForget } = await import(
       "@/modules/observability/lib/system-logger"
     );
-    recordAppBoot();
     writeSystemLogFireAndForget({
       level: "info",
       source: "system",

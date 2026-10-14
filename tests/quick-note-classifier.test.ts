@@ -22,36 +22,125 @@ describe("classifyQuickNoteWithAi", () => {
     vi.clearAllMocks();
   });
 
-  it("classifica como journal", async () => {
+  it("extrai lista vazia de tarefas (só caderno)", async () => {
     setDefaultLlmGenerator(
       createInMemoryLlmGenerator({
-        text: '{"destination":"journal","title":null,"description":null,"dueDate":null}'
+        text: '{"tasks":[]}'
       })
     );
 
     const { classifyQuickNoteWithAi } = await import("@/modules/journal/lib/quick-note-classifier");
-    const result = await classifyQuickNoteWithAi("Reunião com time foi produtiva");
+    const result = await classifyQuickNoteWithAi(
+      "Reunião com time foi produtiva",
+      new Date(2026, 7, 11)
+    );
 
-    expect(result).toEqual({ ok: true, classification: { destination: "journal" } });
+    expect(result).toEqual({ ok: true, classification: { tasks: [] } });
   });
 
-  it("classifica como task com título", async () => {
+  it("extrai tarefa e resolve dueRelative end_of_work_week", async () => {
     setDefaultLlmGenerator(
       createInMemoryLlmGenerator({
-        text: '{"destination":"task","title":"Revisar PR 42","description":"antes do merge","dueDate":null}'
+        text: '{"tasks":[{"title":"Resolver deploy","description":null,"dueDate":null,"dueRelative":"end_of_work_week"}]}'
       })
     );
 
     const { classifyQuickNoteWithAi } = await import("@/modules/journal/lib/quick-note-classifier");
-    const result = await classifyQuickNoteWithAi("revisar pr 42 antes do merge");
+    const result = await classifyQuickNoteWithAi(
+      "preciso resolver o deploy até o final dessa semana",
+      new Date(2026, 7, 11)
+    );
 
     expect(result).toEqual({
       ok: true,
       classification: {
-        destination: "task",
-        title: "Revisar PR 42",
-        description: "antes do merge",
-        dueDate: null
+        tasks: [
+          {
+            title: "Resolver deploy",
+            description: null,
+            dueDate: "2026-08-14"
+          }
+        ]
+      }
+    });
+  });
+
+  it("ignora dueDate alucinada quando dueRelative está presente", async () => {
+    setDefaultLlmGenerator(
+      createInMemoryLlmGenerator({
+        text: '{"tasks":[{"title":"Resolver algo","description":null,"dueDate":"2026-10-29","dueRelative":"end_of_work_week"}]}'
+      })
+    );
+
+    const { classifyQuickNoteWithAi } = await import("@/modules/journal/lib/quick-note-classifier");
+    const result = await classifyQuickNoteWithAi(
+      "preciso resolver algo até o final dessa semana",
+      new Date(2026, 7, 11)
+    );
+
+    expect(result).toEqual({
+      ok: true,
+      classification: {
+        tasks: [
+          {
+            title: "Resolver algo",
+            description: null,
+            dueDate: "2026-08-14"
+          }
+        ]
+      }
+    });
+  });
+
+  it("extrai várias tarefas", async () => {
+    setDefaultLlmGenerator(
+      createInMemoryLlmGenerator({
+        text: '{"tasks":[{"title":"Revisar PR 42","description":null,"dueDate":null},{"title":"Atualizar docs","description":"readme","dueDate":null}]}'
+      })
+    );
+
+    const { classifyQuickNoteWithAi } = await import("@/modules/journal/lib/quick-note-classifier");
+    const result = await classifyQuickNoteWithAi("revisar pr 42 e atualizar docs");
+
+    expect(result).toEqual({
+      ok: true,
+      classification: {
+        tasks: [
+          { title: "Revisar PR 42", description: null, dueDate: null },
+          { title: "Atualizar docs", description: "readme", dueDate: null }
+        ]
+      }
+    });
+  });
+
+  it("retenta extração quando há action cues e a IA devolve tasks vazias", async () => {
+    let calls = 0;
+    setDefaultLlmGenerator({
+      hasApiKey: () => true,
+      generateText: async () => {
+        calls += 1;
+        if (calls === 1) {
+          return '{"tasks":[]}';
+        }
+        return '{"tasks":[{"title":"Falar da falha oab na daily e com o Brunnelo","description":"JOR-311 / GDC","dueDate":null,"dueRelative":"tomorrow"}]}';
+      }
+    });
+
+    const note = `Sobre a integração com GDC (jor-311), já avisei o Christian, mas amanhã ainda preciso falar isso na daily e com o Brunnelo.`;
+    const { classifyQuickNoteWithAi } = await import("@/modules/journal/lib/quick-note-classifier");
+    const result = await classifyQuickNoteWithAi(note, new Date(2026, 7, 11));
+
+    expect(calls).toBe(2);
+    expect(result).toEqual({
+      ok: true,
+      classification: {
+        tasks: [
+          {
+            title: "Falar da falha oab na daily e com o Brunnelo",
+            description: "JOR-311 / GDC",
+            dueDate: "2026-08-12"
+          }
+        ]
       }
     });
   });

@@ -2,6 +2,7 @@
 
 import { CalendarDays, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { HelpHint } from "@/components/ui/help-hint";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Surface } from "@/components/ui/surface";
 import { useDayCalendar } from "@/modules/day-calendar/hooks/use-day-calendar";
@@ -17,24 +18,16 @@ export function DashboardDayCalendarWidget() {
 
   return (
     <Surface className="flex h-full min-w-0 flex-col space-y-4 p-4" data-testid="dashboard-day-calendar-widget">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-[var(--brand-border)] bg-[var(--brand-dim)] text-[var(--brand-bright)]">
             <CalendarDays className="size-4" aria-hidden />
           </span>
-          <div className="min-w-0 space-y-1">
+          <div className="flex min-w-0 items-center gap-2">
             <h2 className="text-sm font-semibold text-[var(--app-text)]">
               {ptBR.dayCalendar.widgetTitle}
             </h2>
-            <p className="text-xs text-[var(--app-text-muted)]">
-              {isLoading
-                ? ptBR.dayCalendar.loading
-                : missingConfig
-                  ? ptBR.dayCalendar.widgetEmptyConfig
-                  : events.length === 0 && !error
-                    ? ptBR.dayCalendar.widgetEmpty
-                    : ptBR.dayCalendar.widgetHint(events.length)}
-            </p>
+            <HelpHint>{ptBR.dayCalendar.widgetHelp}</HelpHint>
           </div>
         </div>
         {isLoading ? (
@@ -77,7 +70,7 @@ export function DashboardDayCalendarWidget() {
               <p className="text-sm font-medium leading-snug text-[var(--app-text)]">
                 {event.title}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
+              <p className="mt-1 text-xs text-[var(--app-text-muted)]">
                 {formatDayCalendarTimeRange(
                   event.startsAt,
                   event.endsAt,
@@ -85,7 +78,7 @@ export function DashboardDayCalendarWidget() {
                   timeZone
                 )}
                 {event.location ? (
-                  <span className="text-[var(--app-text-muted)]"> · {event.location}</span>
+                  <span> · {event.location}</span>
                 ) : null}
               </p>
             </li>

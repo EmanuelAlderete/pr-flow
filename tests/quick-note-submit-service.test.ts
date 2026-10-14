@@ -42,10 +42,10 @@ describe("submitQuickNote", () => {
     appendQuickNoteToToday.mockResolvedValue({ ok: true, note });
   });
 
-  it("salva no caderno quando IA classifica journal", async () => {
+  it("sempre salva no caderno quando IA não extrai tarefas", async () => {
     classifyQuickNoteWithAi.mockResolvedValue({
       ok: true,
-      classification: { destination: "journal" }
+      classification: { tasks: [] }
     });
 
     const { submitQuickNote } = await import("@/modules/journal/lib/quick-note-submit-service");
@@ -53,40 +53,73 @@ describe("submitQuickNote", () => {
 
     expect(result).toEqual({
       ok: true,
-      destination: "journal",
       routedBy: "ai",
-      note
+      note,
+      tasks: []
     });
+    expect(appendQuickNoteToToday).toHaveBeenCalled();
     expect(createTaskFromInput).not.toHaveBeenCalled();
   });
 
-  it("cria tarefa quando IA classifica task", async () => {
+  it("salva no caderno e cria tarefas relacionadas", async () => {
     classifyQuickNoteWithAi.mockResolvedValue({
       ok: true,
       classification: {
-        destination: "task",
-        title: "Revisar PR 42",
-        description: null,
-        dueDate: null
+        tasks: [
+          {
+            title: "Resolver deploy",
+            description: null,
+            dueDate: "2026-08-14"
+          }
+        ]
       }
     });
-    createTaskFromInput.mockResolvedValue({ ok: true, task });
+    createTaskFromInput.mockResolvedValue({
+      ok: true,
+      task: { ...task, title: "Resolver deploy", dueDate: "2026-08-14" }
+    });
 
     const { submitQuickNote } = await import("@/modules/journal/lib/quick-note-submit-service");
-    const result = await submitQuickNote({ text: "revisar pr 42" });
+    const result = await submitQuickNote({ text: "resolver deploy até o final dessa semana" });
 
     expect(result).toEqual({
       ok: true,
-      destination: "task",
       routedBy: "ai",
-      task
+      note,
+      tasks: [{ ...task, title: "Resolver deploy", dueDate: "2026-08-14" }]
     });
+    expect(appendQuickNoteToToday).toHaveBeenCalled();
     expect(createTaskFromInput).toHaveBeenCalledWith({
-      title: "Revisar PR 42",
+      title: "Resolver deploy",
       description: null,
-      dueDate: null
+      dueDate: "2026-08-14"
     });
-    expect(appendQuickNoteToToday).not.toHaveBeenCalled();
+  });
+
+  it("cria várias tarefas a partir de uma captura", async () => {
+    const taskB = { ...task, id: "task-2", title: "Atualizar docs" };
+    classifyQuickNoteWithAi.mockResolvedValue({
+      ok: true,
+      classification: {
+        tasks: [
+          { title: "Revisar PR", description: null, dueDate: null },
+          { title: "Atualizar docs", description: null, dueDate: null }
+        ]
+      }
+    });
+    createTaskFromInput
+      .mockResolvedValueOnce({ ok: true, task })
+      .mockResolvedValueOnce({ ok: true, task: taskB });
+
+    const { submitQuickNote } = await import("@/modules/journal/lib/quick-note-submit-service");
+    const result = await submitQuickNote({ text: "revisar pr e atualizar docs" });
+
+    expect(result).toMatchObject({
+      ok: true,
+      routedBy: "ai",
+      tasks: [task, taskB]
+    });
+    expect(createTaskFromInput).toHaveBeenCalledTimes(2);
   });
 
   it("usa caderno como fallback quando IA falha", async () => {
@@ -97,34 +130,38 @@ describe("submitQuickNote", () => {
 
     expect(result).toEqual({
       ok: true,
-      destination: "journal",
       routedBy: "fallback",
-      note
+      note,
+      tasks: []
     });
+    expect(createTaskFromInput).not.toHaveBeenCalled();
   });
 
-  it("usa caderno quando criação de tarefa falha na validação", async () => {
+  it("mantém caderno mesmo se uma tarefa falhar na validação", async () => {
     classifyQuickNoteWithAi.mockResolvedValue({
       ok: true,
       classification: {
-        destination: "task",
-        title: "",
-        description: null,
-        dueDate: null
+        tasks: [
+          { title: "Ok", description: null, dueDate: null },
+          { title: "", description: null, dueDate: null }
+        ]
       }
     });
-    createTaskFromInput.mockResolvedValue({
-      ok: false,
-      errors: { title: "Título é obrigatório." }
-    });
+    createTaskFromInput
+      .mockResolvedValueOnce({ ok: true, task })
+      .mockResolvedValueOnce({
+        ok: false,
+        errors: { title: "Título é obrigatório." }
+      });
 
     const { submitQuickNote } = await import("@/modules/journal/lib/quick-note-submit-service");
     const result = await submitQuickNote({ text: "x" });
 
-    expect(result).toMatchObject({
+    expect(result).toEqual({
       ok: true,
-      destination: "journal",
-      routedBy: "fallback"
+      routedBy: "ai",
+      note,
+      tasks: [task]
     });
   });
 });

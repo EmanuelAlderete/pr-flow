@@ -14,7 +14,7 @@ export {
 
 export { extractJiraIssueKeyFromBranch } from "@/modules/jira-issue-key/lib/issue-key-branch";
 
-export { postgresWordBoundaryPattern, textMentionsIssueKey } from "@/modules/jira-issue-key/lib/issue-key-text";
+export { textMentionsIssueKey } from "@/modules/jira-issue-key/lib/issue-key-text";
 
 export type { JiraIssueKeySource } from "@/modules/jira-issue-key/lib/issue-key-sources";
 

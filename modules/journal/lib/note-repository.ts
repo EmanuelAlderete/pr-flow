@@ -1,9 +1,5 @@
-import { and, asc, eq, gte, isNull, lte, sql } from "drizzle-orm";
-import {
-  normalizeJiraIssueKey,
-  postgresWordBoundaryPattern,
-  textMentionsIssueKey
-} from "@/modules/jira-issue-key";
+import { and, asc, eq, gte, isNull, lte } from "drizzle-orm";
+import { normalizeJiraIssueKey, textMentionsIssueKey } from "@/modules/jira-issue-key";
 import type { NoteDto } from "@/modules/journal/lib/domain";
 import { getDb } from "@/modules/db/lib/db";
 import { notes } from "@/modules/journal/lib/schema";
@@ -30,16 +26,8 @@ export async function listActiveNotes(): Promise<NoteDto[]> {
 
 export async function listActiveNotesMentioningIssueKey(issueKey: string): Promise<NoteDto[]> {
   const normalized = normalizeJiraIssueKey(issueKey);
-  const pattern = postgresWordBoundaryPattern(normalized);
-  const db = getDb();
-  const rows = await db
-    .select()
-    .from(notes)
-    .where(and(isNull(notes.deletedAt), sql`${notes.body} ~* ${pattern}`));
-
-  return rows
-    .map(toNoteDto)
-    .filter((note) => textMentionsIssueKey(note.body, normalized));
+  const active = await listActiveNotes();
+  return active.filter((note) => textMentionsIssueKey(note.body, normalized));
 }
 
 export async function getActiveNoteByNotebookDay(notebookDay: string): Promise<NoteDto | null> {

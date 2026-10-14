@@ -1,14 +1,20 @@
-import { date, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
-export const tasks = pgTable("tasks", {
-  id: uuid("id").primaryKey().defaultRandom(),
+export const tasks = sqliteTable("tasks", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   description: text("description"),
-  dueDate: date("due_date"),
-  completedAt: timestamp("completed_at", { withTimezone: true }),
-  deletedAt: timestamp("deleted_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+  dueDate: text("due_date"),
+  completedAt: integer("completed_at", { mode: "timestamp_ms" }),
+  deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date())
 });
 
 export type TaskRow = typeof tasks.$inferSelect;

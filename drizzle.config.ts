@@ -1,5 +1,13 @@
 import { defineConfig } from "drizzle-kit";
 
+function sqliteFile() {
+  const url = process.env.DATABASE_URL ?? "file:./data/pr-flow.sqlite";
+  if (url.startsWith("postgres://") || url.startsWith("postgresql://")) {
+    return "./data/pr-flow.sqlite";
+  }
+  return url.startsWith("file:") ? url.slice("file:".length) : url;
+}
+
 export default defineConfig({
   schema: [
     "./modules/tasks/lib/schema.ts",
@@ -10,8 +18,8 @@ export default defineConfig({
     "./modules/prs/lib/schema.ts"
   ],
   out: "./drizzle",
-  dialect: "postgresql",
+  dialect: "sqlite",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgresql://prflow:prflow@localhost:5432/prflow"
+    url: sqliteFile()
   }
 });

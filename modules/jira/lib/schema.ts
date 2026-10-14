@@ -1,31 +1,37 @@
-import { jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import type { JiraIssueDetailDto, JiraIssueDto, JiraSprintsResponse } from "@/modules/jira/lib/domain";
 
-export const jiraSyncMeta = pgTable("jira_sync_meta", {
+export const jiraSyncMeta = sqliteTable("jira_sync_meta", {
   id: text("id").primaryKey().default("default"),
   email: text("email").notNull().default(""),
   displayName: text("display_name"),
-  lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+  lastSyncedAt: integer("last_synced_at", { mode: "timestamp_ms" }),
   lastSyncStatus: text("last_sync_status"),
   lastSyncError: text("last_sync_error")
 });
 
-export const jiraSprintsCache = pgTable("jira_sprints_cache", {
+export const jiraSprintsCache = sqliteTable("jira_sprints_cache", {
   id: text("id").primaryKey().default("default"),
-  payload: jsonb("payload").$type<JiraSprintsResponse>().notNull(),
-  syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow()
+  payload: text("payload", { mode: "json" }).$type<JiraSprintsResponse>().notNull(),
+  syncedAt: integer("synced_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date())
 });
 
-export const jiraIssuesCache = pgTable("jira_issues_cache", {
+export const jiraIssuesCache = sqliteTable("jira_issues_cache", {
   sprintFilter: text("sprint_filter").primaryKey(),
-  issues: jsonb("issues").$type<JiraIssueDto[]>().notNull(),
-  syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow()
+  issues: text("issues", { mode: "json" }).$type<JiraIssueDto[]>().notNull(),
+  syncedAt: integer("synced_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date())
 });
 
-export const jiraIssueDetails = pgTable("jira_issue_details", {
+export const jiraIssueDetails = sqliteTable("jira_issue_details", {
   issueKey: text("issue_key").primaryKey(),
-  payload: jsonb("payload").$type<JiraIssueDetailDto>().notNull(),
-  syncedAt: timestamp("synced_at", { withTimezone: true }).notNull().defaultNow()
+  payload: text("payload", { mode: "json" }).$type<JiraIssueDetailDto>().notNull(),
+  syncedAt: integer("synced_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date())
 });
 
 export type JiraSyncMetaRow = typeof jiraSyncMeta.$inferSelect;

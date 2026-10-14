@@ -4,6 +4,7 @@ export const LOG_LEVELS: LogLevel[] = ["debug", "info", "warn", "error"];
 
 export const CRON_LOG_SOURCES = [
   { id: "cron:prs-sync", label: "PRs — sincronização (10 min)" },
+  { id: "cron:pr-local-review", label: "PRs — revisão local (15 min)" },
   { id: "cron:jira-sync", label: "Jira — sincronização (10 min)" },
   { id: "cron:summaries-daily", label: "Resumos — diário (meia-noite)" },
   { id: "cron:summaries-weekly", label: "Resumos — semanal (segunda)" },

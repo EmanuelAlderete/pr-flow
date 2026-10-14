@@ -45,7 +45,26 @@ export interface MonitoredPr {
   hasUnresolvedComments?: boolean;
   /** Preenchido na leitura do monitor quando a PR já foi enviada ao Slack. */
   slackShare?: PrSlackShareInfo | null;
+  /** Última revisão local desta PR, quando existir. */
+  localReview?: PrLocalReviewInfo | null;
 }
+
+export type PrLocalReviewFinding = {
+  agent: string;
+  path: string;
+  line?: number;
+  message: string;
+  confidence: number;
+};
+
+export type PrLocalReviewInfo = {
+  status: "running" | "ok" | "error";
+  headSha: string;
+  summary: string | null;
+  findings: PrLocalReviewFinding[];
+  finishedAt: string | null;
+  error: string | null;
+};
 
 export type PrApiSuccess = {
   status: "ok";

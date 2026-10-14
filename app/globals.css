@@ -876,6 +876,22 @@ a {
   gap: 10px;
 }
 
+.pr-local-review {
+  margin-top: 10px;
+  border: 1px solid color-mix(in oklab, var(--app-border) 65%, transparent);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.pr-local-review summary {
+  cursor: pointer;
+}
+
+.pr-local-review-findings {
+  margin: 8px 0 0;
+  padding-left: 1.1rem;
+}
+
 .reviewers-duo {
   display: grid;
   gap: 10px;

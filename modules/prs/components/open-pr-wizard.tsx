@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Eye, GitBranch, Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -415,9 +415,14 @@ export function OpenPrWizard() {
         <p className="text-sm text-[var(--app-text-muted)]">
           A pull request foi aberta com sucesso.
         </p>
-        <Button render={<a href={createdPrUrl} target="_blank" rel="noopener noreferrer" />}>
+        <a
+          href={createdPrUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonVariants()}
+        >
           Abrir no GitHub
-        </Button>
+        </a>
       </Surface>
     );
   }

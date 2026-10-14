@@ -60,7 +60,7 @@ describe("DashboardDayCalendarWidget", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("dashboard-day-calendar-widget")).toHaveTextContent(
-        "Conecte o calendário pelo .env para ver os eventos."
+        "Configure GOOGLE_CALENDAR_ICAL_URL no .env com o endereço secreto do iCal do Google Calendar."
       );
     });
   });

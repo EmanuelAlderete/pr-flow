@@ -11,7 +11,7 @@ import {
   RefreshCw
 } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -485,13 +485,12 @@ export function JiraBranchWizardDialog({
                       </p>
                     </div>
                     {result.openPrUrl ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        render={<Link href={result.openPrUrl} />}
+                      <Link
+                        href={result.openPrUrl}
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
                       >
                         Abrir PR
-                      </Button>
+                      </Link>
                     ) : null}
                   </Surface>
                 </li>

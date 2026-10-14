@@ -9,6 +9,11 @@ export const CRON_JOB_SCHEDULE_SPECS: readonly CronJobScheduleSpec[] = [
     runOnStart: true
   },
   {
+    id: "cron:pr-local-review",
+    expression: "*/15 * * * *",
+    disableEnvVar: "DISABLE_PR_LOCAL_REVIEW_CRON"
+  },
+  {
     id: "cron:jira-sync",
     expression: "*/10 * * * *",
     disableEnvVar: "DISABLE_JIRA_SYNC_CRON",

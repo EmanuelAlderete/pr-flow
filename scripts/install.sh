@@ -504,7 +504,7 @@ print_config_summary() {
     echo -e "  ${icon_dot}  Career level    ${ENV_VALUES[SUMMARY_CAREER_LEVEL]}"
   fi
   echo
-  tip "DATABASE_URL no Docker é injetado pelo Compose (postgres interno) — não precisa configurar."
+  tip "O banco é um arquivo SQLite (data/pr-flow.sqlite). O Compose monta ./data no container."
   echo
 }
 
@@ -677,7 +677,7 @@ verify_env_completeness() {
     success "Slack"
   fi
 
-  tip "Compose injeta DATABASE_URL apontando para o serviço postgres."
+  tip "Compose usa SQLite em ./data. A revisão local de PRs roda no host (npm), onde o Claude Code está instalado."
 
   if [[ "$missing_core" -eq 1 ]]; then
     echo
@@ -720,7 +720,6 @@ print_finish() {
   echo
   echo -e "  ${WHITE}${BOLD}URLs${RESET}"
   echo -e "  ${icon_dot} App:     ${ORANGE}${BOLD}http://localhost:${port}${RESET}"
-  echo -e "  ${icon_dot} Grafana: ${ORANGE}${BOLD}http://localhost:3848${RESET}  ${DIM}(admin / prflow)${RESET}"
   echo
   echo -e "  ${WHITE}${BOLD}Credenciais (atalhos)${RESET}"
   echo -e "  ${icon_link} Gemini   ${DIM}${URL_GEMINI}${RESET}"

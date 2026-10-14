@@ -21,6 +21,11 @@ const META: Record<CronJobId, Pick<CronJobDefinition, "schedule" | "description"
     schedule: "A cada 10 minutos",
     description: "Sincroniza pull requests monitoradas com o GitHub e atualiza o cache local."
   },
+  "cron:pr-local-review": {
+    schedule: "A cada 15 minutos",
+    description:
+      "Revisa uma PR aberta com commit novo, no clone local, usando Claude Code (modelo barato e subagentes). Não aprova nem rejeita no GitHub."
+  },
   "cron:jira-sync": {
     schedule: "A cada 10 minutos",
     description:

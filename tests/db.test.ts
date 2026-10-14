@@ -15,6 +15,11 @@ describe("db (seam público)", () => {
     }
   });
 
+  it("resolveSqliteFile rejeita URL de PostgreSQL", async () => {
+    const { resolveSqliteFile } = await import("@/modules/db/lib/db");
+    expect(() => resolveSqliteFile("postgresql://prflow:prflow@localhost:5432/prflow")).toThrow(/PostgreSQL/);
+  });
+
   it("getDb throws when DATABASE_URL is not set", async () => {
     delete process.env.DATABASE_URL;
 

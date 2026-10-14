@@ -8,7 +8,3 @@ export function textMentionsIssueKey(text: string, issueKey: string): boolean {
   return new RegExp(`\\b${escaped}\\b`, "i").test(text);
 }
 
-export function postgresWordBoundaryPattern(issueKey: string): string {
-  const escaped = issueKey.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return `\\m${escaped}\\M`;
-}

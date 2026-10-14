@@ -19,23 +19,13 @@ export async function POST(request: Request) {
     );
   }
 
-  if (result.destination === "task") {
-    return NextResponse.json(
-      {
-        destination: result.destination,
-        routedBy: result.routedBy,
-        task: result.task
-      },
-      { status: 201 }
-    );
-  }
-
+  const status = result.tasks.length > 0 ? 201 : 200;
   return NextResponse.json(
     {
-      destination: result.destination,
       routedBy: result.routedBy,
-      note: result.note
+      note: result.note,
+      tasks: result.tasks
     },
-    { status: 200 }
+    { status }
   );
 }

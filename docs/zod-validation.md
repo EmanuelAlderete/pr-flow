@@ -23,7 +23,7 @@ O projeto já declara `zod` em `package.json` (^4.x). Não adicione outra biblio
 
 ## Quando Zod é opcional
 
-- Tipos já garantidos pelo **Drizzle** (`$inferSelect` / `$inferInsert`) **depois** de ler do Postgres — o banco é a fonte; Zod entra na **entrada** da API, não em cada linha retornada.
+- Tipos já garantidos pelo **Drizzle** (`$inferSelect` / `$inferInsert`) **depois** de ler do SQLite — o banco é a fonte; Zod entra na **entrada** da API, não em cada linha retornada.
 - Constantes internas e enums fechados no próprio módulo (sem input externo).
 - Guards triviais de uma linha em código que **nunca** recebe input do usuário ou da rede.
 
@@ -31,7 +31,7 @@ Na dúvida, use Zod — o custo é baixo e evita regressões silenciosas.
 
 ## Organização de arquivos
 
-Evite misturar com schemas **Drizzle** (tabelas Postgres):
+Evite misturar com schemas **Drizzle** (tabelas SQLite):
 
 | Finalidade | Nome usual | Exemplo |
 |----------|------------|---------|
