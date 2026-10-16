@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { JournalPage } from "@/modules/journal/components/journal-page";
+import { mockJournalFetch, noteFetchCalls } from "@/tests/journal-page-fetch";
 
 vi.mock("@/modules/journal/lib/notebook-day", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/modules/journal/lib/notebook-day")>();
@@ -16,26 +17,17 @@ describe("JournalPage notebook navigation", () => {
   });
 
   it("loads the note for the navigated notebook day", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ note: null })
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
-          note: {
-            id: "note-1",
-            notebookDay: "2026-05-27",
-            body: "Yesterday",
-            createdAt: "2026-05-27T12:00:00.000Z",
-            updatedAt: "2026-05-27T12:00:00.000Z"
-          }
-        })
-      });
-
-    vi.stubGlobal("fetch", fetchMock);
+    const yesterday = {
+      id: "note-1",
+      notebookDay: "2026-05-27",
+      body: "Yesterday",
+      createdAt: "2026-05-27T12:00:00.000Z",
+      updatedAt: "2026-05-27T12:00:00.000Z"
+    };
+    const fetchMock = mockJournalFetch([
+      { body: { note: null } },
+      { body: { note: yesterday } }
+    ]);
 
     render(<JournalPage />);
 
@@ -57,6 +49,6 @@ describe("JournalPage notebook navigation", () => {
     await waitFor(() => expect(screen.getByTestId("note-preview")).toBeInTheDocument());
     expect(screen.getByText("Yesterday")).toBeInTheDocument();
     expect(screen.queryByLabelText(/corpo da nota/i)).not.toBeInTheDocument();
-    expect(fetchMock).toHaveBeenLastCalledWith("/api/journal/notes?notebookDay=2026-05-27");
+    expect(noteFetchCalls(fetchMock).at(-1)?.[0]).toBe("/api/journal/notes?notebookDay=2026-05-27");
   });
 });

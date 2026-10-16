@@ -4,6 +4,7 @@ const getActiveNoteByNotebookDay = vi.fn();
 const hasTasksCompletedOnNotebookDay = vi.fn();
 const buildDailySummaryJiraContext = vi.fn();
 const buildDailySummaryPrContext = vi.fn();
+const buildGitActivityForDay = vi.fn();
 
 vi.mock("@/modules/journal/lib/note-repository", () => ({
   getActiveNoteByNotebookDay: (...args: unknown[]) => getActiveNoteByNotebookDay(...args)
@@ -36,9 +37,14 @@ vi.mock("@/modules/notebook-day/lib/pr-context", () => ({
     )
 }));
 
+vi.mock("@/modules/notebook-day/lib/git-activity", () => ({
+  buildGitActivityForDay: (...args: unknown[]) => buildGitActivityForDay(...args)
+}));
+
 describe("summary-input", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    buildGitActivityForDay.mockResolvedValue([]);
   });
 
   it("contextHasSummaryInput ignora tarefas pendentes", async () => {

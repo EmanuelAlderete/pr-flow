@@ -99,6 +99,22 @@ export type DailySummaryPrContext = {
   mergesToday: DailySummaryPrMergedItem[];
 };
 
+/** Authored commit in a monitored repository. Message only — no diff. */
+export type AuthoredCommit = {
+  sha: string;
+  message: string;
+  repository: string;
+  jiraIssueKey: string | null;
+  pullRequestNumber: number | null;
+};
+
+export type StandupBeat = "yesterday" | "today" | "blocker";
+
+export type GapFact = {
+  beat: StandupBeat;
+  answer: string;
+};
+
 export type DailySummaryContext = {
   day: string;
   noteBody: string | null;
@@ -106,6 +122,12 @@ export type DailySummaryContext = {
   completedTodayTasks: DailySummaryTaskItem[];
   jira: DailySummaryJiraContext | null;
   prs: DailySummaryPrContext | null;
+  /** Commits authored by the person on this civil day. Absent on older fixtures. */
+  gitActivity?: AuthoredCommit[];
+  /** Gap answers are facts. Mentoring readings stay out of this list. */
+  gapFacts?: GapFact[];
+  /** Person's reading of a career signal. Not a work fact. */
+  mentoringReadings?: string[];
 };
 
 export type DailySummarySuccess = {

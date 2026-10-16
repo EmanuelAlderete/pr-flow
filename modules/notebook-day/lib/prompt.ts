@@ -1,4 +1,5 @@
 import type {
+  AuthoredCommit,
   DailySummaryContext,
   DailySummaryJiraItem,
   DailySummaryPrItem,
@@ -192,6 +193,39 @@ function formatPendingReview(pr: DailySummaryQueueItem): string {
   return `- #${pr.number} (${pr.repository}): ${pr.title}${jira}`;
 }
 
+function formatGitSection(commits: AuthoredCommit[] | undefined): string {
+  if (!commits || commits.length === 0) {
+    return "(nenhum commit de autoria neste dia)";
+  }
+
+  return commits
+    .map((commit) => {
+      const subject = commit.message.split("\n")[0];
+      const jira = commit.jiraIssueKey ? ` · ${commit.jiraIssueKey}` : "";
+      const pullRequest = commit.pullRequestNumber ? ` · #${commit.pullRequestNumber}` : "";
+      return `- ${commit.repository} (${commit.sha.slice(0, 7)}): ${subject}${jira}${pullRequest}`;
+    })
+    .join("\n");
+}
+
+function formatGapFacts(context: DailySummaryContext): string {
+  const facts = context.gapFacts ?? [];
+  if (facts.length === 0) {
+    return "(nenhuma lacuna respondida)";
+  }
+
+  return facts.map((fact) => `- ${fact.beat}: ${fact.answer}`).join("\n");
+}
+
+function formatMentoringReadings(context: DailySummaryContext): string {
+  const readings = context.mentoringReadings ?? [];
+  if (readings.length === 0) {
+    return "(nenhuma leitura de mentoria)";
+  }
+
+  return readings.map((reading) => `- ${reading}`).join("\n");
+}
+
 function formatPrSection(prs: DailySummaryPrContext | null): string {
   if (!prs) {
     return "(integração GitHub não configurada ou cache de PRs ainda não sincronizado)";
@@ -283,7 +317,16 @@ ${formatTaskList(context.completedTodayTasks, false)}
 ${formatJiraSection(context.jira)}
 
 ## Pull Requests
-${formatPrSection(context.prs)}`;
+${formatPrSection(context.prs)}
+
+## Atividade Git (commits de autoria, sem diff)
+${formatGitSection(context.gitActivity)}
+
+## Fatos de lacuna (subsídio)
+${formatGapFacts(context)}
+
+## Leituras de mentoria (não são fatos de trabalho)
+${formatMentoringReadings(context)}`;
 }
 
 export function buildDailySummaryPrompt(context: DailySummaryContext): string {
@@ -291,7 +334,7 @@ export function buildDailySummaryPrompt(context: DailySummaryContext): string {
 
 ${buildSummaryCareerPersona()}
 
-Com base exclusivamente nos dados abaixo, escreva um resumo do dia **correlacionando** anotações do caderno, tarefas locais, tickets Jira (status e horas) e pull requests (suas PRs, reviews e fila pendente). A correlação alimenta a síntese nas três seções — não reproduza cada fonte em bloco separado.
+Com base exclusivamente nos dados abaixo, escreva um resumo do dia **correlacionando** anotações do caderno, tarefas locais, tickets Jira (status e horas), pull requests (suas PRs, reviews e fila pendente) e commits de autoria. A correlação alimenta a síntese nas três seções — não reproduza cada fonte em bloco separado. Fatos de lacuna entram como evidência de trabalho. Leituras de mentoria entram só na seção de evolução, como leitura da pessoa, nunca como entrega.
 
 ## Regras gerais
 - Tom objetivo, construtivo e profissional.

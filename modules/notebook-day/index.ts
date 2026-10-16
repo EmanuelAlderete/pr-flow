@@ -4,8 +4,10 @@
  */
 
 export type {
+  AuthoredCommit,
   DailySummaryAlreadyExists,
   DailySummaryContext,
+  GapFact,
   DailySummaryError,
   DailySummaryJiraContext,
   DailySummaryJiraItem,
@@ -22,8 +24,11 @@ export type {
   DailySummaryReviewEvent,
   DailySummaryReviewItem,
   DailySummarySuccess,
-  DailySummaryTaskItem
+  DailySummaryTaskItem,
+  StandupBeat
 } from "@/modules/notebook-day/lib/types";
+
+export { buildGitActivityForDay, selectAuthoredCommits } from "@/modules/notebook-day/lib/git-activity";
 
 export {
   buildNotebookDayContext,

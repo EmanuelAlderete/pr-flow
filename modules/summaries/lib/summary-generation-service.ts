@@ -8,6 +8,7 @@ import {
 } from "@/modules/llm-generation";
 import { isValidNotebookDay } from "@/modules/journal/lib/notebook-day";
 import { ptBR } from "@/modules/messages";
+import { isNotebookDayQuizWindowOpen } from "@/modules/day-follow-up/lib/quiz-window-status";
 import { buildPersistedDailySummaryContext } from "@/modules/summaries/lib/persisted-daily-context";
 import { buildPersistedDailySummaryPrompt } from "@/modules/summaries/lib/persisted-daily-prompt";
 import type { SummaryDto } from "@/modules/summaries/lib/domain";
@@ -40,15 +41,22 @@ function missingApiKeyResult(): SummaryGenerationResult {
 
 export async function generateAndPersistDailySummary(
   day: string,
-  options?: { force?: boolean }
+  options?: { force?: boolean; refresh?: boolean; now?: Date }
 ): Promise<SummaryGenerationResult> {
   if (!isValidNotebookDay(day)) {
     return { status: "error", message: ptBR.summary.invalidDate };
   }
 
-  if (!options?.force) {
-    const existing = await getSummaryByTypeAndPeriod("daily", day);
-    if (existing) {
+  const existing = await getSummaryByTypeAndPeriod("daily", day);
+  if (existing) {
+    let open = false;
+    try {
+      open = await isNotebookDayQuizWindowOpen(day, options?.now ?? new Date());
+    } catch {
+      open = false;
+    }
+    const wantsRewrite = Boolean(options?.force || options?.refresh);
+    if (!open || !wantsRewrite) {
       return { status: "skipped", reason: ptBR.summary.dailyAlreadyExists(day) };
     }
   }

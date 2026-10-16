@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { JournalPage } from "@/modules/journal/components/journal-page";
+import { mockJournalFetch, noteFetchCalls } from "@/tests/journal-page-fetch";
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams()
@@ -34,19 +35,10 @@ describe("JournalPage edit flow", () => {
       updatedAt: "2026-05-28T12:00:00.000Z"
     };
 
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ note: existing })
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => updated
-      });
-
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = mockJournalFetch([
+      { body: { note: existing } },
+      { status: 200, body: updated }
+    ]);
 
     render(<JournalPage />);
 
@@ -65,18 +57,17 @@ describe("JournalPage edit flow", () => {
     });
     vi.useRealTimers();
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(noteFetchCalls(fetchMock)).toHaveLength(2));
     await waitFor(() =>
       expect(screen.getByLabelText(/corpo da nota/i)).toHaveValue("Updated standup")
     );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
+    expect(noteFetchCalls(fetchMock)[1]).toEqual([
       "/api/journal/notes/note-1",
       expect.objectContaining({
         method: "PATCH",
         body: JSON.stringify({ body: "Updated standup" })
       })
-    );
+    ]);
     expect(screen.getByRole("status", { name: "Salvo" })).toBeInTheDocument();
   });
 
@@ -95,19 +86,10 @@ describe("JournalPage edit flow", () => {
       updatedAt: "2026-05-28T12:00:00.000Z"
     };
 
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ note: existing })
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => updated
-      });
-
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = mockJournalFetch([
+      { body: { note: existing } },
+      { status: 200, body: updated }
+    ]);
 
     render(<JournalPage />);
 
@@ -124,15 +106,14 @@ describe("JournalPage edit flow", () => {
     });
     vi.useRealTimers();
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
+    await waitFor(() => expect(noteFetchCalls(fetchMock)).toHaveLength(2));
+    expect(noteFetchCalls(fetchMock)[1]).toEqual([
       "/api/journal/notes/note-1",
       expect.objectContaining({
         method: "PATCH",
         body: JSON.stringify({ body: withTrailingSpace })
       })
-    );
+    ]);
     await waitFor(() =>
       expect(screen.getByLabelText(/corpo da nota/i)).toHaveValue(withTrailingSpace)
     );

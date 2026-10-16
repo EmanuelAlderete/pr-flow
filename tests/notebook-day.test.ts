@@ -4,6 +4,7 @@ const getActiveNoteByNotebookDay = vi.fn();
 const listTaskLists = vi.fn();
 const buildDailySummaryJiraContext = vi.fn();
 const buildDailySummaryPrContext = vi.fn();
+const buildGitActivityForDay = vi.fn();
 
 vi.mock("@/modules/journal/lib/note-repository", () => ({
   getActiveNoteByNotebookDay: (...args: unknown[]) => getActiveNoteByNotebookDay(...args)
@@ -25,9 +26,14 @@ vi.mock("@/modules/notebook-day/lib/pr-context", () => ({
     Boolean(prs && prs.reviewsGivenToday.length > 0)
 }));
 
+vi.mock("@/modules/notebook-day/lib/git-activity", () => ({
+  buildGitActivityForDay: (...args: unknown[]) => buildGitActivityForDay(...args)
+}));
+
 describe("notebook-day (seam público)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    buildGitActivityForDay.mockResolvedValue([]);
   });
 
   it("monta contexto e detecta insumo via contextHasSummaryInput", async () => {

@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { JournalPage } from "@/modules/journal/components/journal-page";
+import { mockJournalFetch, noteFetchCalls } from "@/tests/journal-page-fetch";
 
 vi.mock("@/modules/journal/lib/notebook-day", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/modules/journal/lib/notebook-day")>();
@@ -25,19 +26,10 @@ describe("JournalPage create flow", () => {
       updatedAt: "2026-05-28T12:00:00.000Z"
     };
 
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ note: null })
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 201,
-        json: async () => created
-      });
-
-    vi.stubGlobal("fetch", fetchMock);
+    const fetchMock = mockJournalFetch([
+      { body: { note: null } },
+      { status: 201, body: created }
+    ]);
 
     render(<JournalPage />);
 
@@ -56,13 +48,12 @@ describe("JournalPage create flow", () => {
     });
     vi.useRealTimers();
 
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(noteFetchCalls(fetchMock)).toHaveLength(2));
     await waitFor(() =>
       expect(screen.getByLabelText(/corpo da nota/i)).toHaveValue("## Standup\n\n- shipped journal")
     );
     expect(screen.queryByRole("status", { name: /empty notebook/i })).not.toBeInTheDocument();
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
+    expect(noteFetchCalls(fetchMock)[1]).toEqual([
       "/api/journal/notes",
       expect.objectContaining({
         method: "POST",
@@ -71,7 +62,7 @@ describe("JournalPage create flow", () => {
           body: "## Standup\n\n- shipped journal"
         })
       })
-    );
+    ]);
     expect(screen.getByRole("status", { name: "Salvo" })).toBeInTheDocument();
   });
 });

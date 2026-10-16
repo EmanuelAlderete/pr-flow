@@ -1,3 +1,4 @@
+import { buildGitActivityForDay } from "@/modules/notebook-day/lib/git-activity";
 import { buildDailySummaryJiraContext } from "@/modules/notebook-day/lib/jira-context";
 import { buildDailySummaryPrContext } from "@/modules/notebook-day/lib/pr-context";
 import type { DailySummaryContext, DailySummaryTaskItem } from "@/modules/notebook-day/lib/types";
@@ -26,11 +27,12 @@ function toCompletedItem(
 }
 
 export async function buildNotebookDayContext(day: string): Promise<DailySummaryContext> {
-  const [note, lists, jira, prs] = await Promise.all([
+  const [note, lists, jira, prs, gitActivity] = await Promise.all([
     getActiveNoteByNotebookDay(day),
     listTaskLists(day),
     buildDailySummaryJiraContext(day),
-    buildDailySummaryPrContext(day)
+    buildDailySummaryPrContext(day),
+    buildGitActivityForDay(day)
   ]);
 
   return {
@@ -39,7 +41,8 @@ export async function buildNotebookDayContext(day: string): Promise<DailySummary
     pendingTasks: lists.open.map(toPendingItem),
     completedTodayTasks: lists.completed.map(toCompletedItem),
     jira,
-    prs
+    prs,
+    gitActivity
   };
 }
 

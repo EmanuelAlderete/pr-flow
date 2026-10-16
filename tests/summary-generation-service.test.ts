@@ -10,6 +10,7 @@ const generateLlmText = vi.fn();
 const hasLlmApiKey = vi.fn();
 const dayHasSummaryInput = vi.fn();
 const weekHasSummaryInput = vi.fn();
+const isNotebookDayQuizWindowOpen = vi.fn();
 
 vi.mock("@/modules/summaries/lib/persisted-daily-context", () => ({
   buildPersistedDailySummaryContext: (...args: unknown[]) => buildPersistedDailySummaryContext(...args)
@@ -48,9 +49,14 @@ vi.mock("@/modules/llm-generation", () => ({
   GEMINI_RATE_LIMIT_USER_MESSAGE: "Limite da API Gemini atingido."
 }));
 
+vi.mock("@/modules/day-follow-up/lib/quiz-window-status", () => ({
+  isNotebookDayQuizWindowOpen: (...args: unknown[]) => isNotebookDayQuizWindowOpen(...args)
+}));
+
 describe("generateAndPersistDailySummary", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    isNotebookDayQuizWindowOpen.mockResolvedValue(false);
   });
 
   it("pula quando não há insumo no dia", async () => {

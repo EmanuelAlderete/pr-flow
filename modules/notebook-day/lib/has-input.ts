@@ -1,3 +1,4 @@
+import { buildGitActivityForDay } from "@/modules/notebook-day/lib/git-activity";
 import { buildDailySummaryJiraContext, jiraContextHasActivityOnDay } from "@/modules/notebook-day/lib/jira-context";
 import { buildDailySummaryPrContext, prContextHasSummaryInput } from "@/modules/notebook-day/lib/pr-context";
 import type { DailySummaryContext } from "@/modules/notebook-day/lib/types";
@@ -13,7 +14,8 @@ export function contextHasSummaryInput(context: DailySummaryContext): boolean {
     Boolean(context.noteBody?.trim()) ||
     context.completedTodayTasks.length > 0 ||
     jiraContextHasActivityOnDay(context.jira) ||
-    prContextHasSummaryInput(context.prs)
+    prContextHasSummaryInput(context.prs) ||
+    (context.gitActivity?.length ?? 0) > 0
   );
 }
 
@@ -33,11 +35,12 @@ export async function dayHasPrActivityOnDay(day: string): Promise<boolean> {
 }
 
 export async function dayHasSummaryInput(day: string): Promise<boolean> {
-  const [hasNote, hasCompleted, hasJira, hasPr] = await Promise.all([
+  const [hasNote, hasCompleted, hasJira, hasPr, gitActivity] = await Promise.all([
     hasNotebookContentOnDay(day),
     hasTasksCompletedOnNotebookDay(day),
     dayHasJiraActivityOnDay(day),
-    dayHasPrActivityOnDay(day)
+    dayHasPrActivityOnDay(day),
+    buildGitActivityForDay(day)
   ]);
-  return hasNote || hasCompleted || hasJira || hasPr;
+  return hasNote || hasCompleted || hasJira || hasPr || gitActivity.length > 0;
 }

@@ -6,6 +6,7 @@ import { BetterSQLiteSession } from "drizzle-orm/better-sqlite3/session";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { appSettings } from "@/modules/app/lib/schema";
 import { notes } from "@/modules/journal/lib/schema";
+import { quizAnswers, standupScripts } from "@/modules/day-follow-up/lib/schema";
 import {
   jiraIssueDetails,
   jiraIssuesCache,
@@ -27,7 +28,9 @@ const schema = {
   jiraIssuesCache,
   jiraIssueDetails,
   prTimelineEvents,
-  prLocalReviews
+  prLocalReviews,
+  standupScripts,
+  quizAnswers
 };
 
 const POSTGRES_URL_ERROR =

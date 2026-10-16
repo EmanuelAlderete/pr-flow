@@ -12,7 +12,7 @@ export const ptBR = {
     dailyAlreadyExists: (day: string) => `Resumo diário de ${day} já existe.`,
     weeklyAlreadyExists: (weekMonday: string) => `Resumo semanal de ${weekMonday} já existe.`,
     dailyNoInput:
-      "Não há anotações, tarefas concluídas, tickets Jira movimentados nem atividade de PR (review, merge ou mudança de status) neste dia — resumo não gerado para economizar cota da API.",
+      "Não há anotações, tarefas concluídas, tickets Jira movimentados, commits de autoria nem atividade de PR (review, merge ou mudança de status) neste dia — resumo não gerado para economizar cota da API.",
     weeklyNoInput:
       "Não há anotações, tarefas concluídas, atividade Jira nem PR/review na semana — resumo semanal não gerado.",
     loadFailed: "Falha ao carregar resumos.",
@@ -289,6 +289,30 @@ export const ptBR = {
     loadFailed: "Não foi possível carregar o streak do journal.",
     retry: "Tentar novamente",
     calendarHasNote: "Dia com nota"
+  },
+  followUp: {
+    panelTitle: "Acompanhamento do dia",
+    scriptTitle: "Roteiro de daily",
+    summaryTitle: "Resumo do dia",
+    quizTitle: "Quiz do dia",
+    yesterday: "Ontem",
+    today: "Hoje",
+    blocker: "Bloqueio",
+    noSummaryYet: "Sem resumo ainda.",
+    windowClosed: "Janela fechada.",
+    noNextQuestion: "Não há próxima pergunta.",
+    nextQuestion: "Próxima pergunta",
+    markUsed: "Marcar como usado",
+    scriptUsed: "Roteiro usado",
+    draftHint: "Rascunho. Só ler não fecha a janela.",
+    answerLabel: "Resposta",
+    sendAnswer: "Enviar resposta",
+    answerRejected: "A janela deste dia já fechou. A resposta não foi gravada.",
+    gapLabel: "Lacuna",
+    mentoringLabel: "Mentoria",
+    loading: "Carregando acompanhamento…",
+    loadFailed: "Não foi possível carregar o acompanhamento deste dia.",
+    saveFailed: "Não foi possível atualizar o acompanhamento."
   }
 } as const;
 
