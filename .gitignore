@@ -39,3 +39,6 @@ Thumbs.db
 # Misc
 *.log
 .vercel
+
+*storybook.log
+storybook-static/
