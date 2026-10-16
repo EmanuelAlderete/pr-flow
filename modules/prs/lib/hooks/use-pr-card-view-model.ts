@@ -66,8 +66,7 @@ export function usePrCardViewModel(pr: MonitoredPr): PrCardViewModel {
             : "Sem reviewers solicitados";
 
     const shouldShowStatusPill =
-      (Boolean(pr.readyToMerge) || statusGeral === "changes_requested" || statusGeral === "approved") &&
-      !sufficientApprovalsWithConflict;
+      (Boolean(pr.readyToMerge) || statusGeral === "approved") && !sufficientApprovalsWithConflict;
 
     const impediments = getPrImpediments({
       statusGeral,
@@ -75,7 +74,8 @@ export function usePrCardViewModel(pr: MonitoredPr): PrCardViewModel {
       hasUnresolvedComments: pr.hasUnresolvedComments,
       pendingReviewersCount: pendente.length,
       requestedReviewersCount: pr.requestedReviewersCount ?? pendente.length,
-      requestedChangesCount: solicitouAlteracoes.length
+      requestedChangesCount: solicitouAlteracoes.length,
+      requestedChangesLogins: solicitouAlteracoes
     });
 
     const jiraIssueKey = extractJiraIssueKey(pr.title);

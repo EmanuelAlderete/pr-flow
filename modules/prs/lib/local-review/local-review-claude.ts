@@ -1,4 +1,5 @@
 import {
+  agentsWithModel,
   claudeAgentPayload,
   loadLocalReviewAgents,
   LOCAL_REVIEW_MODEL,
@@ -38,7 +39,8 @@ export function buildClaudeArgs(input: {
     "--permission-mode",
     "plan",
     "--output-format",
-    "json",
+    "stream-json",
+    "--verbose",
     "--allowedTools",
     "Read,Grep,Glob,Agent,Bash(git diff:*),Bash(git log:*),Bash(gh pr diff:*),Bash(gh pr view:*)",
     "--agents",
@@ -55,7 +57,7 @@ export async function runClaudeReview(input: {
 }): Promise<string> {
   const run = input.run ?? defaultCommandRunner;
   const model = input.model ?? resolveReviewModel(input.env);
-  const agents = loadLocalReviewAgents();
+  const agents = agentsWithModel(loadLocalReviewAgents(), model);
   const args = buildClaudeArgs({ prompt: input.prompt, model, agents });
   const { stdout } = await run("claude", args, {
     cwd: input.cwd,

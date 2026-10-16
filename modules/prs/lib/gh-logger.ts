@@ -1,6 +1,7 @@
-import { writeFileSync, mkdirSync, existsSync, statSync, renameSync, unlinkSync, readdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, existsSync, statSync, renameSync, unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
+import { colorize, logAnsi, stdoutSupportsColor } from "@/modules/observability/lib/log-color";
 
 const DEFAULT_ROTATION_SIZE = 10 * 1024 * 1024; // 10MB
 const MAX_ROTATED_FILES = 5;
@@ -72,21 +73,31 @@ export class GhLogger {
   ): void {
     const now = new Date();
     const timeStr = now.toLocaleTimeString("en-US", { hour12: false });
-    
+    const enabled = stdoutSupportsColor();
+
     // Truncate long args for display
     const argsStr = args.join(" ");
     const displayArgs = argsStr.length > 50 ? argsStr.substring(0, 50) + "..." : argsStr;
-    
-    const status = exitCode === 0 ? "✓" : "✗";
+
+    const status = colorize(
+      exitCode === 0 ? "✓" : "✗",
+      exitCode === 0 ? logAnsi.green : logAnsi.boldRed,
+      enabled
+    );
     const durationStr = (duration / 1000).toFixed(1);
-    
-    let output = `[${timeStr}] ${command} ${displayArgs} ${status} ${durationStr}s`;
-    
+
+    let output = [
+      colorize(`[${timeStr}]`, logAnsi.dim, enabled),
+      colorize(`${command} ${displayArgs}`, logAnsi.cyan, enabled),
+      status,
+      colorize(`${durationStr}s`, logAnsi.dim, enabled)
+    ].join(" ");
+
     if (exitCode !== 0 && stderr) {
       const stderrPreview = stderr.substring(0, 50);
-      output += ` (exit ${exitCode}: ${stderrPreview})`;
+      output += ` ${colorize(`(exit ${exitCode}: ${stderrPreview})`, logAnsi.boldRed, enabled)}`;
     }
-    
+
     console.log(output);
   }
 

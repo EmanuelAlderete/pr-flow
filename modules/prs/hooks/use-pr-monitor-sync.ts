@@ -65,15 +65,17 @@ export function usePrMonitorSync() {
   const [isFetching, setIsFetching] = useState(false);
   const inFlightRef = useRef(false);
 
-  const runFetch = useCallback(async (method: "GET" | "POST") => {
+  const runFetch = useCallback(async (method: "GET" | "POST", options?: { silent?: boolean }) => {
     if (inFlightRef.current) {
       return null;
     }
 
     inFlightRef.current = true;
-    setIsFetching(true);
+    if (!options?.silent) {
+      setIsFetching(true);
+    }
     const hasCachedOk = loadPrMonitorLastSync() !== null;
-    if (!hasCachedOk) {
+    if (!hasCachedOk && !options?.silent) {
       setLoading(true);
     }
 
@@ -82,23 +84,32 @@ export function usePrMonitorSync() {
 
     try {
       const { ok, body } = await fetchPrMonitorFromApi(method);
+      if (options?.silent && !ok) {
+        return null;
+      }
       const next = resolveMonitorResponse(ok, body, fallbackMessage);
       setResponse(next);
       return next;
     } catch (error) {
+      if (options?.silent) {
+        return null;
+      }
       const message = error instanceof Error ? error.message : "Erro de rede ao consultar monitor.";
       const next = staleFromLocalCache(message) ?? ({ status: "error", message } satisfies PrApiResponse);
       setResponse(next);
       return next;
     } finally {
-      setLoading(false);
-      setIsFetching(false);
+      if (!options?.silent) {
+        setLoading(false);
+        setIsFetching(false);
+      }
       inFlightRef.current = false;
     }
   }, []);
 
   const load = useCallback(() => runFetch("GET"), [runFetch]);
   const refresh = useCallback(() => runFetch("POST"), [runFetch]);
+  const reload = useCallback(() => runFetch("GET", { silent: true }), [runFetch]);
 
   useEffect(() => {
     const cached = loadPrMonitorLastSync();
@@ -110,11 +121,22 @@ export function usePrMonitorSync() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+      void reload();
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [reload]);
+
   return {
     response,
     loading,
     isFetching,
     refresh,
-    load
+    load,
+    reload
   };
 }

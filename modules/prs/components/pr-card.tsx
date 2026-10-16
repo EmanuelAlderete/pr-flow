@@ -5,64 +5,27 @@ import type { MonitoredPr, PrSlackShareInfo } from "@/modules/prs/lib/domain";
 import { PrAlertIcons } from "@/modules/prs/components/pr-alert-icons";
 import { PrCardContextMenu } from "@/modules/prs/components/pr-card-context-menu";
 import { PrCardSlackSharedBadge } from "@/modules/prs/components/pr-card-slack-shared-badge";
+import { PrLocalReviewStatusIcon } from "@/modules/prs/components/pr-local-review-icon";
 import { PrOpenDuration } from "@/modules/prs/components/pr-open-duration";
 import { ReviewerListItem } from "@/modules/prs/components/reviewer-list-item";
 import { usePrCardViewModel } from "@/modules/prs/lib/hooks/use-pr-card-view-model";
-import { ptBR } from "@/modules/messages";
 import { useWorkContext } from "@/modules/work-context/components/work-context-provider";
-
-function LocalReviewBlock({ review }: { review: MonitoredPr["localReview"] }) {
-  if (!review) {
-    return null;
-  }
-
-  if (review.status === "running") {
-    return <p className="small muted pr-local-review">{ptBR.localReview.running}</p>;
-  }
-
-  if (review.status === "error") {
-    return (
-      <p className="small muted pr-local-review">
-        {ptBR.localReview.failed}
-        {review.error ? ` — ${review.error}` : ""}
-      </p>
-    );
-  }
-
-  const findings = review.findings.slice(0, 8);
-
-  return (
-    <div className="pr-local-review">
-      <details>
-        <summary>{ptBR.localReview.summary(review.findings.length)}</summary>
-        {review.summary ? <p className="small">{review.summary}</p> : null}
-        {findings.length > 0 ? (
-          <ul className="pr-local-review-findings">
-            {findings.map((finding) => (
-              <li key={`${finding.path}:${finding.line ?? 0}:${finding.message}`}>
-                <span className="small">
-                  {finding.path}
-                  {finding.line ? `:${finding.line}` : ""} — {finding.message}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="small muted">{ptBR.localReview.clean}</p>
-        )}
-      </details>
-      <p className="small muted">{ptBR.localReview.human}</p>
-    </div>
-  );
-}
 
 interface Props {
   pr: MonitoredPr;
   allOpenPrs?: MonitoredPr[];
   slackConfigured?: boolean;
+  reviewInProgress?: boolean;
+  onReviewStarted?: () => void;
 }
 
-export function PrCard({ pr, allOpenPrs = [], slackConfigured = false }: Props) {
+export function PrCard({
+  pr,
+  allOpenPrs = [],
+  slackConfigured = false,
+  reviewInProgress = false,
+  onReviewStarted
+}: Props) {
   const vm = usePrCardViewModel(pr);
   const { openWorkContext } = useWorkContext();
   const [slackShare, setSlackShare] = useState<PrSlackShareInfo | null>(pr.slackShare ?? null);
@@ -77,8 +40,10 @@ export function PrCard({ pr, allOpenPrs = [], slackConfigured = false }: Props) 
     <PrCardContextMenu
       allOpenPrs={allOpenPrs}
       jiraIssueKey={vm.jiraIssueKey}
+      onReviewStarted={onReviewStarted}
       onSlackShareChange={setSlackShare}
       pr={{ ...pr, slackShare }}
+      reviewInProgress={reviewInProgress}
       slackConfigured={slackConfigured}
       statusClass={vm.statusClass}
     >
@@ -98,6 +63,7 @@ export function PrCard({ pr, allOpenPrs = [], slackConfigured = false }: Props) 
           </div>
           <div className="pr-meta-right">
             {slackShare ? <PrCardSlackSharedBadge slackShare={slackShare} /> : null}
+            <PrLocalReviewStatusIcon prNumber={pr.number} repository={pr.repository} review={pr.localReview} />
             <PrAlertIcons impediments={vm.impediments} />
             {vm.shouldShowStatusPill && <span className={`status-pill ${vm.statusClass}`}>{vm.statusLabel}</span>}
           </div>
@@ -165,18 +131,6 @@ export function PrCard({ pr, allOpenPrs = [], slackConfigured = false }: Props) 
             )}
           </div>
 
-          {vm.solicitouAlteracoes.length > 0 && (
-            <section className="pr-reviewer-group">
-              <h4>Alterações solicitadas</h4>
-              <div className="avatars">
-                {vm.solicitouAlteracoes.map((login) => (
-                  <span key={login} className="avatar changes" title={login}>
-                    {login.charAt(0).toUpperCase()}
-                  </span>
-                ))}
-              </div>
-            </section>
-          )}
         </section>
       )}
 
@@ -187,7 +141,6 @@ export function PrCard({ pr, allOpenPrs = [], slackConfigured = false }: Props) 
         </div>
       )}
 
-      <LocalReviewBlock review={pr.localReview} />
     </PrCardContextMenu>
   );
 }

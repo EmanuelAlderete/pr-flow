@@ -32,6 +32,7 @@ export interface PrImpedimentsInput {
   pendingReviewersCount: number;
   requestedReviewersCount: number;
   requestedChangesCount: number;
+  requestedChangesLogins?: string[];
 }
 
 export function getPrImpediments(input: PrImpedimentsInput): PrImpediment[] {
@@ -65,9 +66,10 @@ export function getPrImpediments(input: PrImpedimentsInput): PrImpediment[] {
   }
 
   if (input.requestedChangesCount > 0) {
+    const who = (input.requestedChangesLogins ?? []).filter(Boolean);
     impediments.push({
       key: "changes-requested",
-      label: "Alterações solicitadas",
+      label: who.length > 0 ? `Alterações solicitadas por ${who.join(", ")}` : "Alterações solicitadas",
       icon: "changes-requested",
       tone: "danger"
     });

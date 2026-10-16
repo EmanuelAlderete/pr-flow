@@ -1,0 +1,1 @@
+ALTER TABLE `pr_local_reviews` ADD `usage` text;

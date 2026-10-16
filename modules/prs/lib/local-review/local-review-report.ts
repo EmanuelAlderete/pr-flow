@@ -32,12 +32,33 @@ export const localReviewReportSchema = z.object({
 export type LocalReviewReport = z.infer<typeof localReviewReportSchema>;
 
 export function extractReviewJson(raw: string): unknown {
-  const trimmed = stripFence(raw.trim());
-  const parsed = parseJsonObject(trimmed);
-  if (isClaudeWrapper(parsed)) {
-    return extractReviewJson(parsed.result);
+  const text = raw.trim();
+  const direct = tryParseJson(text);
+  if (direct !== undefined) {
+    if (isClaudeWrapper(direct)) {
+      return extractReviewJson(direct.result);
+    }
+    return direct;
   }
-  return parsed;
+
+  const fenced = stripFence(text);
+  if (fenced !== text) {
+    return extractReviewJson(fenced);
+  }
+
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    const sliced = tryParseJson(text.slice(start, end + 1));
+    if (sliced !== undefined) {
+      if (isClaudeWrapper(sliced)) {
+        return extractReviewJson(sliced.result);
+      }
+      return sliced;
+    }
+  }
+
+  throw new Error("A revisão não devolveu JSON.");
 }
 
 export function parseLocalReviewReport(raw: string): LocalReviewReport {
@@ -60,16 +81,11 @@ function stripFence(text: string): string {
   return fenced?.[1]?.trim() ?? text;
 }
 
-function parseJsonObject(text: string): unknown {
+function tryParseJson(text: string): unknown | undefined {
   try {
     return JSON.parse(text) as unknown;
   } catch {
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    if (start === -1 || end <= start) {
-      throw new Error("A revisão não devolveu JSON.");
-    }
-    return JSON.parse(text.slice(start, end + 1)) as unknown;
+    return undefined;
   }
 }
 

@@ -8,10 +8,14 @@ describe("system-logger", () => {
     stdoutWrite.mockClear();
     delete process.env.LOG_FORMAT;
     delete process.env.DATABASE_URL;
+    delete process.env.FORCE_COLOR;
+    process.env.NO_COLOR = "1";
     process.env.NODE_ENV = "test";
   });
 
   afterEach(() => {
+    delete process.env.NO_COLOR;
+    delete process.env.FORCE_COLOR;
     vi.unstubAllEnvs();
   });
 
@@ -71,6 +75,45 @@ describe("system-logger", () => {
 
     const line = String(stdoutWrite.mock.calls[0]?.[0]);
     expect(line).toContain("warn [system] boot");
+    expect(line).not.toContain("\x1b[");
     expect(() => JSON.parse(line)).toThrow();
+  });
+
+  it("colore nível e origem no formato pretty quando a cor está ligada", async () => {
+    process.env.LOG_FORMAT = "pretty";
+    delete process.env.NO_COLOR;
+    process.env.FORCE_COLOR = "1";
+    const { writeSystemLog } = await import("@/modules/observability/lib/system-logger");
+
+    await writeSystemLog({
+      level: "warn",
+      source: "system",
+      message: "boot",
+      details: { count: 1 }
+    });
+
+    const line = String(stdoutWrite.mock.calls[0]?.[0]);
+    expect(line).toContain("\x1b[33mwarn\x1b[0m");
+    expect(line).toContain("\x1b[36m[system]\x1b[0m");
+    expect(line).toContain("\x1b[2m");
+    expect(line).toContain("boot");
+    expect(() => JSON.parse(line)).toThrow();
+  });
+
+  it("mantém JSON sem cor mesmo com FORCE_COLOR", async () => {
+    process.env.LOG_FORMAT = "json";
+    delete process.env.NO_COLOR;
+    process.env.FORCE_COLOR = "1";
+    const { writeSystemLog } = await import("@/modules/observability/lib/system-logger");
+
+    await writeSystemLog({
+      level: "error",
+      source: "system",
+      message: "falhou"
+    });
+
+    const line = String(stdoutWrite.mock.calls[0]?.[0]);
+    expect(line).not.toContain("\x1b[");
+    expect(JSON.parse(line).level).toBe("error");
   });
 });

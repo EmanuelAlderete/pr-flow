@@ -36,6 +36,30 @@ describe("PrCard", () => {
     expect(container.querySelector(".pr-card")).not.toHaveClass("status-pending");
   });
 
+  it("informa alteracoes solicitadas so pelo icone, e o X fica para conflito", () => {
+    const { container } = renderWithProviders(
+      <PrCard
+        pr={{
+          ...samplePr,
+          statusGeral: "changes_requested",
+          solicitouAlteracoes: ["marcos"],
+          hasConflicts: true
+        }}
+      />
+    );
+
+    expect(screen.getByLabelText("Alterações solicitadas por marcos")).toBeInTheDocument();
+    expect(screen.getByLabelText("Conflitos detectados")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Alterações solicitadas" })).not.toBeInTheDocument();
+    expect(screen.queryByText("Alterações solicitadas")).not.toBeInTheDocument();
+
+    const conflictIcon = screen.getByLabelText("Conflitos detectados").querySelector("path");
+    const changesIcon = screen.getByLabelText("Alterações solicitadas por marcos").querySelector("path");
+    expect(conflictIcon).toHaveAttribute("d", "M8 8l8 8M16 8l-8 8");
+    expect(changesIcon).toHaveAttribute("d", "M12 8v4.5M12 16h.01");
+    expect(container.querySelector(".status-pill")).not.toBeInTheDocument();
+  });
+
   it("exibe listas de revisao sem badge de pendencia", () => {
     renderWithProviders(<PrCard pr={{ ...samplePr, createdAt: "2026-05-28T10:00:00Z" }} />);
     expect(screen.queryByText("peding")).not.toBeInTheDocument();
@@ -412,7 +436,33 @@ describe("PrCard", () => {
       />
     );
 
-    expect(screen.getByText("Revisão local · 1 achado")).toBeInTheDocument();
-    expect(screen.getByText(/A IA sugere/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ler revisão" })).toHaveAttribute("href", "/prs/acme/a/7");
+    expect(screen.queryByText(/retry ignora null/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/A IA sugere/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Revisar de novo" })).not.toBeInTheDocument();
+  });
+
+  it("mostra início e tempo da revisão local em andamento", () => {
+    const startedAt = new Date(Date.now() - 65_000).toISOString();
+    renderWithProviders(
+      <PrCard
+        pr={{
+          ...samplePr,
+          localReview: {
+            status: "running",
+            headSha: "abc1234",
+            summary: null,
+            findings: [],
+            startedAt,
+            finishedAt: null,
+            error: null
+          }
+        }}
+      />
+    );
+
+    expect(screen.getByRole("status", { name: "Revisão local em andamento" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Ler revisão" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Revisar agora" })).not.toBeInTheDocument();
   });
 });

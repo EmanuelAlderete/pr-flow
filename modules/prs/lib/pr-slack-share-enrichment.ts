@@ -1,4 +1,4 @@
-import type { MonitoredPr, PrApiResponse } from "@/modules/prs/lib/domain";
+import type { MonitoredPr, PrApiResponse, PrLocalReviewInfo } from "@/modules/prs/lib/domain";
 import { getLatestLocalReviewsByPullRequest } from "@/modules/prs/lib/local-review/local-review-repository";
 import { getPrSlackSharesByUrls } from "@/modules/prs/lib/pr-slack-share-repository";
 
@@ -31,17 +31,23 @@ export async function enrichMonitoredPrsWithSlackShares(prs: MonitoredPr[]): Pro
   });
 }
 
-export async function enrichMonitoredPrsWithLocalReviews(prs: MonitoredPr[]): Promise<MonitoredPr[]> {
-  if (prs.length === 0) {
-    return prs;
+export async function attachLocalReviews<T extends { repository: string; number: number }>(
+  items: T[]
+): Promise<Array<T & { localReview?: PrLocalReviewInfo | null }>> {
+  if (items.length === 0) {
+    return items;
   }
 
   const reviews = await getLatestLocalReviewsByPullRequest();
-  return prs.map((pr) => {
-    const localReview = reviews.get(`${pr.repository}#${pr.number}`) ?? null;
+  return items.map((item) => {
+    const localReview = reviews.get(`${item.repository}#${item.number}`) ?? null;
     if (!localReview) {
-      return pr;
+      return item;
     }
-    return { ...pr, localReview };
+    return { ...item, localReview };
   });
+}
+
+export async function enrichMonitoredPrsWithLocalReviews(prs: MonitoredPr[]): Promise<MonitoredPr[]> {
+  return attachLocalReviews(prs);
 }

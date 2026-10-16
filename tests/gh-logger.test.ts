@@ -12,9 +12,13 @@ describe("GhLogger", () => {
   beforeEach(() => {
     tempDir = mkdtempSync(join(tmpdir(), "gh-logger-"));
     logger = new GhLogger(tempDir);
+    process.env.NO_COLOR = "1";
+    delete process.env.FORCE_COLOR;
   });
 
   afterEach(() => {
+    delete process.env.NO_COLOR;
+    delete process.env.FORCE_COLOR;
     rmSync(tempDir, { recursive: true, force: true });
   });
 
@@ -117,6 +121,21 @@ describe("GhLogger", () => {
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringMatching(/\[\d{2}:\d{2}:\d{2}\] gh api user ✗ 0.5s \(exit 1:/)
     );
+
+    logSpy.mockRestore();
+  });
+
+  it("colors success and failure on the console when color is enabled", () => {
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    delete process.env.NO_COLOR;
+    process.env.FORCE_COLOR = "1";
+
+    logger.logCommand("gh", ["auth", "status"], 0, "", "", 123);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("\x1b[32m✓\x1b[0m"));
+
+    logger.logCommand("gh", ["api", "user"], 1, "output", "not authenticated", 500);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("\x1b[1;31m✗\x1b[0m"));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("\x1b[36mgh api user\x1b[0m"));
 
     logSpy.mockRestore();
   });

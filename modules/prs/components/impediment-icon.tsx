@@ -17,13 +17,8 @@ export function ImpedimentIcon({ kind }: Props) {
     case "conflicts":
       return (
         <svg {...iconProps}>
-          <path
-            d="M12 3L2 20h20L12 3z"
-            stroke="currentColor"
-            strokeLinejoin="round"
-            strokeWidth="2"
-          />
-          <path d="M12 9v5M12 17h.01" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+          <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+          <path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
         </svg>
       );
     case "unresolved-comments":
@@ -47,7 +42,7 @@ export function ImpedimentIcon({ kind }: Props) {
       return (
         <svg {...iconProps}>
           <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
-          <path d="M8 8l8 8M16 8l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
+          <path d="M12 8v4.5M12 16h.01" stroke="currentColor" strokeLinecap="round" strokeWidth="2" />
         </svg>
       );
     case "pending-reviews":

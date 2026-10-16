@@ -21,7 +21,7 @@ Os documentos deste repositório são a lei. Skills, `CLAUDE.md`, `docs/` e spec
 
 ## Subagentes
 
-Dispare com o Agent tool, modelo `haiku`, nesta ordem:
+Dispare com o Agent tool, modelo `{{REVIEW_MODEL}}`, nesta ordem. No parâmetro `model` de cada chamada, use exatamente esse modelo. Não troque por outro.
 
 1. `correctness`, `security`, `contracts`, `tests`, `delivery`, `conventions` — em paralelo, sem ver o relatório uns dos outros.
 2. `second-pass` — recebe o diff inteiro e os achados que sobraram.

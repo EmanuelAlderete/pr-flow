@@ -62,6 +62,7 @@ export type PrLocalReviewInfo = {
   headSha: string;
   summary: string | null;
   findings: PrLocalReviewFinding[];
+  startedAt?: string | null;
   finishedAt: string | null;
   error: string | null;
 };
@@ -102,6 +103,8 @@ export interface ReviewerQueuePr {
   url: string;
   repository: string;
   myReviewStatus: MyReviewStatus;
+  /** Última revisão local desta PR, quando existir. */
+  localReview?: PrLocalReviewInfo | null;
 }
 
 /** Minimal review snapshot persisted during sync for daily summaries. */

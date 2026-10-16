@@ -8,6 +8,8 @@ export type OpenPrRef = {
   url: string;
   repository: string;
   createdAt: string;
+  /** Menor valor roda primeiro. Pendente vem antes de já revisada. */
+  priority?: number;
 };
 
 export type PullRequestHead = {
@@ -34,6 +36,13 @@ export type LocalReviewPick =
   | { status: "busy" }
   | { status: "empty" }
   | { status: "ready"; candidate: LocalReviewCandidate };
+
+export type TargetedReviewDecision =
+  | { status: "ready"; candidate: LocalReviewCandidate }
+  | { status: "busy"; repository: string; prNumber: number }
+  | { status: "already" }
+  | { status: "missing" }
+  | { status: "closed" };
 
 export function pickNextLocalReview(input: {
   openPrs: OpenPrRef[];
@@ -72,7 +81,17 @@ export function pickNextLocalReview(input: {
       return { ...pr, headSha: head.headSha, baseRef: head.baseRef };
     })
     .filter((pr): pr is LocalReviewCandidate => pr !== null)
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    .sort((a, b) => {
+      const priority = (a.priority ?? 0) - (b.priority ?? 0);
+      if (priority !== 0) {
+        return priority;
+      }
+      const created = a.createdAt.localeCompare(b.createdAt);
+      if (created !== 0) {
+        return created;
+      }
+      return a.number - b.number;
+    });
 
   const candidate = eligible[0];
   if (!candidate) {
@@ -80,6 +99,52 @@ export function pickNextLocalReview(input: {
   }
 
   return { status: "ready", candidate };
+}
+
+export function resolveTargetedReview(input: {
+  repository: string;
+  number: number;
+  openPrs: OpenPrRef[];
+  heads: PullRequestHead[];
+  reviews: StoredLocalReview[];
+  now: Date;
+  staleRunningAfterMs?: number;
+}): TargetedReviewDecision {
+  const pr = input.openPrs.find(
+    (item) => item.repository === input.repository && item.number === input.number
+  );
+  if (!pr) {
+    return { status: "missing" };
+  }
+
+  const head = input.heads.find(
+    (item) => item.repository === input.repository && item.number === input.number
+  );
+  if (!head) {
+    return { status: "closed" };
+  }
+
+  const staleAfter = input.staleRunningAfterMs ?? LOCAL_REVIEW_STALE_RUNNING_MS;
+  const now = input.now.getTime();
+  const freshRunning = input.reviews.find(
+    (review) => review.status === "running" && now - review.updatedAt.getTime() < staleAfter
+  );
+  if (
+    freshRunning &&
+    freshRunning.repository === input.repository &&
+    freshRunning.prNumber === input.number &&
+    freshRunning.headSha === head.headSha
+  ) {
+    return { status: "already" };
+  }
+  if (freshRunning) {
+    return { status: "busy", repository: freshRunning.repository, prNumber: freshRunning.prNumber };
+  }
+
+  return {
+    status: "ready",
+    candidate: { ...pr, headSha: head.headSha, baseRef: head.baseRef }
+  };
 }
 
 function isEligible(

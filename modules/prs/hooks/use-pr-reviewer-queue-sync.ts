@@ -71,15 +71,17 @@ export function usePrReviewerQueueSync() {
   const [isFetching, setIsFetching] = useState(false);
   const inFlightRef = useRef(false);
 
-  const runLoad = useCallback(async (options?: { syncFirst?: boolean }) => {
+  const runLoad = useCallback(async (options?: { syncFirst?: boolean; silent?: boolean }) => {
     if (inFlightRef.current) {
       return null;
     }
 
     inFlightRef.current = true;
-    setIsFetching(true);
+    if (!options?.silent) {
+      setIsFetching(true);
+    }
     const hasCachedOk = loadPrReviewerQueueLastSync() !== null;
-    if (!hasCachedOk) {
+    if (!hasCachedOk && !options?.silent) {
       setLoading(true);
     }
 
@@ -97,10 +99,16 @@ export function usePrReviewerQueueSync() {
       }
 
       const { ok, body } = await fetchReviewerQueueFromApi();
+      if (options?.silent && !ok) {
+        return null;
+      }
       const next = resolveQueueResponse(ok, body, fallbackMessage);
       setResponse(next);
       return next;
     } catch (error) {
+      if (options?.silent) {
+        return null;
+      }
       const message =
         error instanceof Error ? error.message : "Erro de rede ao consultar fila de revisão.";
       const next =
@@ -108,14 +116,17 @@ export function usePrReviewerQueueSync() {
       setResponse(next);
       return next;
     } finally {
-      setLoading(false);
-      setIsFetching(false);
+      if (!options?.silent) {
+        setLoading(false);
+        setIsFetching(false);
+      }
       inFlightRef.current = false;
     }
   }, []);
 
   const load = useCallback(() => runLoad(), [runLoad]);
   const refresh = useCallback(() => runLoad({ syncFirst: true }), [runLoad]);
+  const poll = useCallback(() => runLoad({ silent: true }), [runLoad]);
 
   useEffect(() => {
     const cached = loadPrReviewerQueueLastSync();
@@ -136,11 +147,22 @@ export function usePrReviewerQueueSync() {
     return () => window.removeEventListener(PR_MONITOR_SYNC_UPDATED_EVENT, onSyncUpdated);
   }, [load]);
 
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "hidden") {
+        return;
+      }
+      void poll();
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [poll]);
+
   return {
     response,
     loading,
     isFetching,
     refresh,
-    load
+    load,
+    reload: poll
   };
 }

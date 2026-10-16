@@ -165,9 +165,112 @@ export const ptBR = {
     summary: (count: number) =>
       count === 1 ? "Revisão local · 1 achado" : `Revisão local · ${count} achados`,
     running: "Revisão local em andamento",
+    runningDetail: (started: string, elapsed: string) => `Começou às ${started} · há ${elapsed}`,
+    queueRunning: (repository: string, prNumber: number) => `Revisando ${repository} #${prNumber}`,
+    finished: (repository: string, prNumber: number, count: number) =>
+      count === 1
+        ? `Revisão de ${repository} #${prNumber} concluída · 1 achado`
+        : `Revisão de ${repository} #${prNumber} concluída · ${count} achados`,
+    finishedFailed: (repository: string, prNumber: number) =>
+      `Revisão de ${repository} #${prNumber} terminou com falha`,
+    cronRunning: "Pode levar vários minutos. O andamento e o término aparecem em Para revisar.",
     failed: "A última revisão local falhou",
+    interrupted: "A revisão foi interrompida antes de terminar.",
     human: "A IA sugere. Você decide. Nada é aprovado nem rejeitado no GitHub.",
-    clean: "Nenhum achado acima do limiar de confiança."
+    queueHint: "Revise uma PR da fila agora, ou espere a próxima da cron. O andamento fica neste card.",
+    modelTitle: "Modelo da revisão",
+    modelDescription: "Vale para o orquestrador e para os subagentes.",
+    modelHaiku: "Haiku",
+    modelHaikuHint: "Mais barato. É o padrão da cron.",
+    modelSonnet: "Sonnet",
+    modelSonnetHint: "Mais capaz e gasta mais da cota.",
+    modelOpus: "Opus",
+    modelOpusHint: "O mais capaz. Use pouco.",
+    modelStart: "Começar revisão",
+    modelCancel: "Cancelar",
+    usageHeading: "Uso",
+    usageScope: "Orquestrador e subagentes",
+    usageChosen: (model: string) => `Modelo escolhido: ${model}`,
+    usageOrchestrator: "Orquestrador",
+    usageSubagents: "Subagentes",
+    usagePeakOrchestrator: (peak: string, window: string, percent: number) =>
+      `Pico da janela do orquestrador ${peak} de ${window} (${percent}%)`,
+    usagePeakSubagents: (peak: string, window: string, percent: number) =>
+      `Pico da janela dos subagentes ${peak} de ${window} (${percent}%)`,
+    usageInput: "Entrada",
+    usageOutput: "Saída",
+    usageCacheRead: "Cache lido",
+    usageCacheCreate: "Cache criado",
+    usageThinking: "Thinking",
+    usagePeak: (peak: string, window: string, percent: number) =>
+      `Pico da janela ${peak} de ${window} (${percent}%)`,
+    usageWindow: (window: string) => `Janela de ${window}`,
+    usageWindowUnknown: "O tamanho da janela não veio no resultado.",
+    usageCost: (amount: string) => `Estimativa de lista ${amount}.`,
+    usageCostNote: "A assinatura não cobra este valor por chamada.",
+    trigger: "Revisar agora",
+    retry: "Tentar de novo",
+    again: "Revisar de novo",
+    started: (repository: string, prNumber: number) => `Revisão de ${repository} #${prNumber} começou.`,
+    busyOther: (repository: string, prNumber: number) =>
+      `Já existe uma revisão em andamento em ${repository} #${prNumber}.`,
+    already: "Esta revisão já está em andamento.",
+    missing: "Essa PR não está entre as suas PRs abertas nem na fila para revisar.",
+    closed: "Essa PR não está mais aberta.",
+    triggerFailed: "Não foi possível começar a revisão.",
+    clean: "Nenhum achado acima do limiar de confiança.",
+    read: "Ler revisão",
+    openOnGitHub: "Abrir no GitHub",
+    missingPage: "Não há revisão local desta PR.",
+    summaryHeading: "Resumo",
+    findingsHeading: "Achados",
+    notCommentedHeading: "O que não foi comentado",
+    traceabilityHeading: "Entrega",
+    metaHeading: "Meta-revisão",
+    docsHeading: "Documentos lidos",
+    droppedNone: "Nenhum achado descartado.",
+    droppedHeading: "Descartados",
+    confidence: (percent: number) => `${percent}% de confiança`,
+    agentsHeading: "Subagentes",
+    agentEmpty: "Nada acima do limiar.",
+    noteLabel: "Parecer",
+    agents: {
+      correctness: "Correção",
+      security: "Segurança",
+      contracts: "Contratos",
+      tests: "Testes",
+      delivery: "Requisitos",
+      conventions: "Convenções",
+      "second-pass": "Segunda leitura",
+      "meta-review": "Meta-revisão"
+    },
+    agentDescriptions: {
+      correctness: "Lógica e bugs no diff.",
+      security: "Segurança, dados e permissões.",
+      contracts: "Contratos, tipos e assinaturas.",
+      tests: "Testes e o que ficou sem cobertura.",
+      delivery: "Jira, spec e o que a PR prometeu entregar.",
+      conventions: "Regras escritas do repositório.",
+      "second-pass": "Relê o diff e justifica o que ficou sem comentário.",
+      "meta-review": "Confere o código e derruba achado que não existe."
+    },
+    traceStatus: {
+      met: "Atendido",
+      unmet: "Não atendido",
+      unclear: "Incerto"
+    }
+  },
+  journalDayDraft: {
+    action: "Gerar anotações",
+    actionAriaLabel: "Gerar anotações do dia",
+    pending: "Gerando…",
+    pendingAriaLabel: "Gerando anotações do dia",
+    failed: "Não foi possível gerar as anotações do dia.",
+    missingApiKey: "Configure GEMINI_API_KEY no .env para gerar as anotações do dia.",
+    invalidDate: "Data inválida. Use o formato YYYY-MM-DD.",
+    invalidJson: "JSON inválido.",
+    noInput:
+      "Não há anotação, tarefa concluída, ticket Jira movimentado nem atividade de PR neste dia para montar as anotações."
   },
   journalStreak: {
     widgetTitle: "Streak do journal",

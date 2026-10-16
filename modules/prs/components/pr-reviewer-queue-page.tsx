@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ptBR as messages } from "@/modules/messages";
 import {
   CheckCircle2,
   CircleDashed,
@@ -17,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Surface } from "@/components/ui/surface";
 import { isReviewerQueueWithData } from "@/modules/app/lib/sync-data-helpers";
+import { PrLocalReviewRunningBanner } from "@/modules/prs/components/pr-local-review-block";
 import { PrReviewerQueueItem } from "@/modules/prs/components/pr-reviewer-queue-item";
 import { usePrReviewerQueueSync } from "@/modules/prs/hooks/use-pr-reviewer-queue-sync";
 import type { MyReviewStatus, ReviewerQueuePr } from "@/modules/prs/lib/domain";
@@ -53,6 +55,40 @@ function filterQueue(data: ReviewerQueuePr[], filter: ReviewQueueFilter): Review
   return data.filter((pr) => pr.myReviewStatus === filter);
 }
 
+function useFinishedReviewNotice(prs: ReviewerQueuePr[]): string | null {
+  const previous = useRef<Map<string, ReviewerQueuePr["localReview"]>>(new Map());
+  const [notice, setNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    const current = new Map<string, ReviewerQueuePr["localReview"]>();
+    for (const pr of prs) {
+      current.set(`${pr.repository}#${pr.number}`, pr.localReview);
+    }
+
+    for (const [key, review] of previous.current) {
+      if (review?.status !== "running") {
+        continue;
+      }
+      const next = current.get(key);
+      if (next?.status !== "ok" && next?.status !== "error") {
+        continue;
+      }
+      const [repository = key, prNumber = "0"] = key.split("#");
+      const repo = repository.slice(repository.lastIndexOf("/") + 1);
+      const number = Number(prNumber);
+      setNotice(
+        next.status === "ok"
+          ? messages.localReview.finished(repo, number, next.findings.length)
+          : messages.localReview.finishedFailed(repo, number)
+      );
+    }
+
+    previous.current = current;
+  }, [prs]);
+
+  return notice;
+}
+
 function ReviewQueueCardSkeleton() {
   return (
     <Surface className="review-queue-card review-queue-card--skeleton p-0">
@@ -67,7 +103,7 @@ function ReviewQueueCardSkeleton() {
 }
 
 export function PrReviewerQueuePage() {
-  const { response, loading, isFetching, refresh } = usePrReviewerQueueSync();
+  const { response, loading, isFetching, refresh, reload } = usePrReviewerQueueSync();
   const [filter, setFilter] = useState<ReviewQueueFilter>("all");
 
   const hasData = isReviewerQueueWithData(response);
@@ -75,6 +111,8 @@ export function PrReviewerQueuePage() {
   const counts = useMemo(() => countByStatus(okData), [okData]);
   const filtered = useMemo(() => filterQueue(okData, filter), [okData, filter]);
   const pendingHighlight = counts.pending > 0;
+  const running = okData.find((pr) => pr.localReview?.status === "running") ?? null;
+  const finishedNotice = useFinishedReviewNotice(okData);
 
   if (loading && response === null) {
     return (
@@ -136,6 +174,7 @@ export function PrReviewerQueuePage() {
                 "PRs abertas em que você é revisor solicitado."
               )}
             </p>
+            <p className="text-xs text-[var(--app-text-muted)]">{messages.localReview.queueHint}</p>
           </div>
 
           <Button
@@ -215,6 +254,18 @@ export function PrReviewerQueuePage() {
                 );
               })}
             </div>
+
+            {running?.localReview ? (
+              <PrLocalReviewRunningBanner
+                repository={running.repository}
+                prNumber={running.number}
+                startedAt={running.localReview.startedAt}
+              />
+            ) : finishedNotice ? (
+              <p className="review-queue-page__synced text-[var(--app-text)]" role="status">
+                {finishedNotice}
+              </p>
+            ) : null}
 
             {isFetching ? (
               <p className="review-queue-page__synced" role="status">
@@ -312,7 +363,12 @@ export function PrReviewerQueuePage() {
         {hasData && filtered.length > 0 ? (
           <ul className="review-queue-page__grid">
             {filtered.map((pr) => (
-              <PrReviewerQueueItem key={pr.id} pr={pr} />
+              <PrReviewerQueueItem
+                key={pr.id}
+                pr={pr}
+                reviewInProgress={running !== null}
+                onStarted={() => void reload()}
+              />
             ))}
           </ul>
         ) : null}

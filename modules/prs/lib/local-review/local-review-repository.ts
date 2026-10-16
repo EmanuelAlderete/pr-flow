@@ -1,7 +1,9 @@
 import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/modules/db/lib/db";
+import { ptBR } from "@/modules/messages";
 import type { PrLocalReviewFinding, PrLocalReviewInfo } from "@/modules/prs/lib/domain";
 import { prLocalReviews, type PrLocalReviewRow } from "@/modules/prs/lib/schema";
+import { LOCAL_REVIEW_STALE_RUNNING_MS } from "@/modules/prs/lib/local-review/local-review-candidates";
 import { localReviewReportSchema } from "@/modules/prs/lib/local-review/local-review-report";
 
 export async function listLocalReviews(): Promise<PrLocalReviewRow[]> {
@@ -31,6 +33,7 @@ export async function claimLocalReview(input: {
       model: input.model,
       summary: null,
       report: null,
+      usage: null,
       error: null,
       startedAt: input.now,
       finishedAt: null,
@@ -46,6 +49,7 @@ export async function claimLocalReview(input: {
         model: input.model,
         summary: null,
         report: null,
+        usage: null,
         error: null,
         startedAt: input.now,
         finishedAt: null,
@@ -60,6 +64,7 @@ export async function completeLocalReview(input: {
   headSha: string;
   summary: string;
   report: string;
+  usage: string | null;
   now: Date;
 }): Promise<void> {
   const db = getDb();
@@ -69,6 +74,7 @@ export async function completeLocalReview(input: {
       status: "ok",
       summary: input.summary,
       report: input.report,
+      usage: input.usage,
       error: null,
       finishedAt: input.now,
       updatedAt: input.now
@@ -119,13 +125,32 @@ function matchReview(repository: string, prNumber: number, headSha: string) {
 }
 
 function toLocalReviewInfo(row: PrLocalReviewRow): PrLocalReviewInfo {
+  const startedAt = row.startedAt ? row.startedAt.toISOString() : null;
+  const finishedAt = row.finishedAt ? row.finishedAt.toISOString() : null;
+  const runningTooLong =
+    row.status === "running" &&
+    Date.now() - (row.updatedAt?.getTime() ?? 0) >= LOCAL_REVIEW_STALE_RUNNING_MS;
+
+  if (runningTooLong) {
+    return {
+      status: "error",
+      headSha: row.headSha,
+      summary: row.summary,
+      findings: findingsFromReport(row.report),
+      startedAt,
+      finishedAt,
+      error: ptBR.localReview.interrupted
+    };
+  }
+
   const status = row.status === "ok" || row.status === "running" || row.status === "error" ? row.status : "error";
   return {
     status,
     headSha: row.headSha,
     summary: row.summary,
     findings: findingsFromReport(row.report),
-    finishedAt: row.finishedAt ? row.finishedAt.toISOString() : null,
+    startedAt,
+    finishedAt,
     error: row.error
   };
 }

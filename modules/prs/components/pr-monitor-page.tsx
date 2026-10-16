@@ -8,6 +8,7 @@ import { isPrMonitorWithData } from "@/modules/app/lib/sync-data-helpers";
 import { usePendingReviewCount } from "@/modules/notifications/hooks/use-pending-review-count";
 import { summarizePrMonitorChanges } from "@/modules/notifications/lib/pr-alert-events";
 import { PrCard } from "@/modules/prs/components/pr-card";
+import { PrLocalReviewRunningBanner } from "@/modules/prs/components/pr-local-review-block";
 import { PrInsightsPanel } from "@/modules/prs/components/pr-insights-panel";
 import { PrSearchBar } from "@/modules/prs/components/pr-search-bar";
 import type { MonitoredPr } from "@/modules/prs/lib/domain";
@@ -22,7 +23,7 @@ interface Props {
 }
 
 export function PrMonitorPage({ slackConfigured = false }: Props) {
-  const { response, loading, isFetching, refresh } = usePrMonitorSync();
+  const { response, loading, isFetching, refresh, reload } = usePrMonitorSync();
   const pendingReviewCount = usePendingReviewCount();
   const [changeAlert, setChangeAlert] = useState<string[] | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,6 +51,7 @@ export function PrMonitorPage({ slackConfigured = false }: Props) {
   const hasData = isPrMonitorWithData(response);
   const okData = hasData ? response.data : [];
   const filteredPrs = filterPrsBySearch(okData, searchQuery);
+  const runningReview = okData.find((pr) => pr.localReview?.status === "running") ?? null;
   const insights = buildPrInsights({
     openPrs: okData,
     pendingReviewCount
@@ -159,6 +161,14 @@ export function PrMonitorPage({ slackConfigured = false }: Props) {
             <PrSearchBar onDebouncedChange={setSearchQuery} />
           </section>
 
+          {runningReview?.localReview ? (
+            <PrLocalReviewRunningBanner
+              repository={runningReview.repository}
+              prNumber={runningReview.number}
+              startedAt={runningReview.localReview.startedAt}
+            />
+          ) : null}
+
           <section
             className={cn(
               "cards-grid transition-opacity duration-200",
@@ -175,7 +185,14 @@ export function PrMonitorPage({ slackConfigured = false }: Props) {
               </section>
             ) : (
               filteredPrs.map((pr) => (
-                <PrCard key={pr.id} allOpenPrs={okData} pr={pr} slackConfigured={slackConfigured} />
+                <PrCard
+                  key={pr.id}
+                  allOpenPrs={okData}
+                  onReviewStarted={() => void reload()}
+                  pr={pr}
+                  reviewInProgress={runningReview !== null}
+                  slackConfigured={slackConfigured}
+                />
               ))
             )}
           </section>

@@ -1,6 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { LOCAL_REVIEW_MODEL } from "@/modules/prs/lib/local-review/local-review-models";
+
+export { LOCAL_REVIEW_MODEL } from "@/modules/prs/lib/local-review/local-review-models";
 
 const SKILL_RELATIVE = path.join(".claude", "skills", "trusted-pr-review", "SKILL.md");
 const AGENTS_RELATIVE = path.join(".claude", "agents");
@@ -17,7 +20,10 @@ const AGENT_FILES = [
 ] as const;
 
 export const LOCAL_REVIEW_CONFIDENCE_THRESHOLD = 0.8;
-export const LOCAL_REVIEW_MODEL = "haiku";
+
+export function agentsWithModel(agents: LocalReviewAgent[], model: string): LocalReviewAgent[] {
+  return agents.map((agent) => ({ ...agent, model }));
+}
 
 export type LocalReviewAgent = {
   name: string;
@@ -111,7 +117,12 @@ export function claudeAgentPayload(agents: LocalReviewAgent[]): Record<string, u
   );
 }
 
-export function buildLocalReviewPrompt(target: LocalReviewTarget, skill = loadLocalReviewSkill()): string {
+export function buildLocalReviewPrompt(
+  target: LocalReviewTarget,
+  options?: { skill?: string; model?: string }
+): string {
+  const skill = options?.skill ?? loadLocalReviewSkill();
+  const model = options?.model ?? LOCAL_REVIEW_MODEL;
   const { body } = parseFrontmatter(skill);
   return [
     `Repositório: ${target.repository}`,
@@ -119,7 +130,8 @@ export function buildLocalReviewPrompt(target: LocalReviewTarget, skill = loadLo
     `Título: ${target.title}`,
     `Base: ${target.baseRef}`,
     `Head: ${target.headSha}`,
+    `Modelo: ${model}`,
     "",
-    body
+    body.replaceAll("{{REVIEW_MODEL}}", model)
   ].join("\n");
 }

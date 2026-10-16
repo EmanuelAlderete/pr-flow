@@ -141,6 +141,7 @@ export const prLocalReviews = sqliteTable(
     model: text("model").notNull(),
     summary: text("summary"),
     report: text("report"),
+    usage: text("usage"),
     error: text("error"),
     startedAt: integer("started_at", { mode: "timestamp_ms" }),
     finishedAt: integer("finished_at", { mode: "timestamp_ms" }),

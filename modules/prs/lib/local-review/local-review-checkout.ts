@@ -13,7 +13,7 @@ const prNumberSchema = z.number().int().positive();
 export type CommandRunner = (
   command: string,
   args: string[],
-  options?: { cwd?: string; timeoutMs?: number; env?: NodeJS.ProcessEnv }
+  options?: { cwd?: string; timeoutMs?: number; env?: Record<string, string | undefined> }
 ) => Promise<{ stdout: string; stderr: string }>;
 
 const prHeadSchema = z.object({
@@ -27,12 +27,12 @@ export type ListedPullHead = z.infer<typeof prHeadSchema>;
 export async function defaultCommandRunner(
   command: string,
   args: string[],
-  options?: { cwd?: string; timeoutMs?: number; env?: NodeJS.ProcessEnv }
+  options?: { cwd?: string; timeoutMs?: number; env?: Record<string, string | undefined> }
 ): Promise<{ stdout: string; stderr: string }> {
   const result = await execFileAsync(command, args, {
     cwd: options?.cwd,
     timeout: options?.timeoutMs,
-    env: options?.env,
+    env: options?.env as NodeJS.ProcessEnv | undefined,
     maxBuffer: 20 * 1024 * 1024
   });
   return { stdout: result.stdout, stderr: result.stderr };
@@ -49,28 +49,38 @@ export function reviewCloneDir(root: string, repository: string): string {
   return dir;
 }
 
-export async function listPullRequestHeads(
+const prViewSchema = prHeadSchema.extend({
+  state: z.string()
+});
+
+export async function readOpenPullRequestHead(
   repository: string,
+  number: number,
   run: CommandRunner = defaultCommandRunner
-): Promise<ListedPullHead[]> {
+): Promise<ListedPullHead | null> {
   const slug = repositorySlugSchema.parse(repository);
+  const prNumber = prNumberSchema.parse(number);
   const { stdout } = await run("gh", [
     "pr",
-    "list",
+    "view",
+    String(prNumber),
     "--repo",
     slug,
-    "--state",
-    "open",
-    "--limit",
-    "50",
     "--json",
-    "number,headRefOid,baseRefName"
+    "number,headRefOid,baseRefName,state"
   ]);
-  const parsed = z.array(prHeadSchema).safeParse(JSON.parse(stdout));
+  const parsed = prViewSchema.safeParse(JSON.parse(stdout));
   if (!parsed.success) {
-    throw new Error(`gh pr list devolveu um formato inesperado para ${slug}.`);
+    throw new Error(`gh pr view devolveu um formato inesperado para ${slug}#${prNumber}.`);
   }
-  return parsed.data;
+  if (parsed.data.state !== "OPEN") {
+    return null;
+  }
+  return {
+    number: parsed.data.number,
+    headRefOid: parsed.data.headRefOid,
+    baseRefName: parsed.data.baseRefName
+  };
 }
 
 export async function checkoutPullRequest(input: {
@@ -86,12 +96,20 @@ export async function checkoutPullRequest(input: {
   const run = input.run ?? defaultCommandRunner;
   const dir = reviewCloneDir(input.root, slug);
 
+  const remote = `https://github.com/${slug}.git`;
+  const withGhCredentials = [
+    "-c",
+    "credential.helper=",
+    "-c",
+    "credential.helper=!gh auth git-credential"
+  ];
+
   if (!fs.existsSync(path.join(dir, ".git"))) {
     fs.mkdirSync(path.dirname(dir), { recursive: true });
-    await run("gh", ["repo", "clone", slug, dir], { timeoutMs: 3 * 60 * 1000 });
+    await run("git", [...withGhCredentials, "clone", remote, dir], { timeoutMs: 3 * 60 * 1000 });
   }
 
-  await run("git", ["-C", dir, "fetch", "origin", `pull/${number}/head`], {
+  await run("git", ["-C", dir, ...withGhCredentials, "fetch", remote, `pull/${number}/head`], {
     timeoutMs: 2 * 60 * 1000
   });
   await run("git", ["-C", dir, "checkout", "--force", "--detach", headSha], { timeoutMs: 60 * 1000 });

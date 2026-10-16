@@ -24,7 +24,7 @@ const META: Record<CronJobId, Pick<CronJobDefinition, "schedule" | "description"
   "cron:pr-local-review": {
     schedule: "A cada 15 minutos",
     description:
-      "Revisa uma PR aberta com commit novo, no clone local, usando Claude Code (modelo barato e subagentes). Não aprova nem rejeita no GitHub."
+      "Revisa uma PR de colega em que você é revisor, com commit novo, no clone local, usando Claude Code (modelo barato e subagentes). O resultado aparece em Para revisar. Não aprova nem rejeita no GitHub."
   },
   "cron:jira-sync": {
     schedule: "A cada 10 minutos",

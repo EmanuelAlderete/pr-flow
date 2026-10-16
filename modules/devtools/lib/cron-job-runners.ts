@@ -92,7 +92,7 @@ export async function runPrLocalReviewCron(ctx: RunContext): Promise<CronRunResu
     });
     return {
       jobId: source,
-      status: result.status,
+      status: result.status === "started" ? "ok" : result.status,
       message: result.message,
       details: result
     };
